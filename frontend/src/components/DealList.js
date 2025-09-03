@@ -24,14 +24,20 @@ import {
   TableRow,
   Paper,
   InputAdornment,
-  Collapse
+  Collapse,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import {
   Search as SearchIcon,
   FilterList as FilterIcon,
   Clear as ClearIcon,
   ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon
+  ExpandLess as ExpandLessIcon,
+  Visibility as ViewIcon,
+  Edit as EditIcon
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -48,19 +54,17 @@ function DealList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
-    month: '',
-    year: '',
     startDate: null,
     endDate: null,
     salesperson: '',
     type: '',
-    minFeGross: '',
-    maxFeGross: '',
-    minBeGross: '',
-    maxBeGross: '',
     bank: '',
     status: ''
   });
+
+  // Deal detail dialog states
+  const [selectedDeal, setSelectedDeal] = useState(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 
   const fetchDeals = async () => {
     setLoading(true);
@@ -98,12 +102,6 @@ function DealList() {
     }
 
     // Apply filters
-    if (filters.month) {
-      filtered = filtered.filter(deal => deal.month === parseInt(filters.month));
-    }
-    if (filters.year) {
-      filtered = filtered.filter(deal => deal.year === parseInt(filters.year));
-    }
     if (filters.startDate) {
       filtered = filtered.filter(deal => new Date(deal.date) >= filters.startDate);
     }
@@ -117,18 +115,6 @@ function DealList() {
     }
     if (filters.type) {
       filtered = filtered.filter(deal => deal.type === filters.type);
-    }
-    if (filters.minFeGross) {
-      filtered = filtered.filter(deal => deal.fe_gross >= parseFloat(filters.minFeGross));
-    }
-    if (filters.maxFeGross) {
-      filtered = filtered.filter(deal => deal.fe_gross <= parseFloat(filters.maxFeGross));
-    }
-    if (filters.minBeGross) {
-      filtered = filtered.filter(deal => deal.be_gross >= parseFloat(filters.minBeGross));
-    }
-    if (filters.maxBeGross) {
-      filtered = filtered.filter(deal => deal.be_gross <= parseFloat(filters.maxBeGross));
     }
     if (filters.bank) {
       filtered = filtered.filter(deal => 
@@ -145,16 +131,10 @@ function DealList() {
 
   const clearFilters = () => {
     setFilters({
-      month: '',
-      year: '',
       startDate: null,
       endDate: null,
       salesperson: '',
       type: '',
-      minFeGross: '',
-      maxFeGross: '',
-      minBeGross: '',
-      maxBeGross: '',
       bank: '',
       status: ''
     });
@@ -171,13 +151,27 @@ function DealList() {
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString();
+    const date = new Date(dateString);
+    if (isNaN(date.getTime()) || date.getTime() === 0) return '-';
+    return date.toLocaleDateString();
   };
 
   // Get unique values for dropdowns
   const uniqueTypes = [...new Set(deals.map(deal => deal.type).filter(Boolean))];
   const uniqueBanks = [...new Set(deals.map(deal => deal.bank).filter(Boolean))];
   const uniqueSalespersons = [...new Set(deals.map(deal => deal.salesperson_name).filter(Boolean))];
+
+  // Handle deal row click
+  const handleDealClick = (deal) => {
+    setSelectedDeal(deal);
+    setDetailDialogOpen(true);
+  };
+
+  // Handle dialog close
+  const handleCloseDialog = () => {
+    setDetailDialogOpen(false);
+    setSelectedDeal(null);
+  };
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -229,25 +223,6 @@ function DealList() {
             <CardContent>
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6} md={3}>
-                  <TextField
-                    fullWidth
-                    label="Month"
-                    type="number"
-                    value={filters.month}
-                    onChange={(e) => handleFilterChange('month', e.target.value)}
-                    inputProps={{ min: 1, max: 12 }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <TextField
-                    fullWidth
-                    label="Year"
-                    type="number"
-                    value={filters.year}
-                    onChange={(e) => handleFilterChange('year', e.target.value)}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
                   <DatePicker
                     label="Start Date"
                     value={filters.startDate}
@@ -285,42 +260,6 @@ function DealList() {
                       ))}
                     </Select>
                   </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <TextField
-                    fullWidth
-                    label="Min FE Gross"
-                    type="number"
-                    value={filters.minFeGross}
-                    onChange={(e) => handleFilterChange('minFeGross', e.target.value)}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <TextField
-                    fullWidth
-                    label="Max FE Gross"
-                    type="number"
-                    value={filters.maxFeGross}
-                    onChange={(e) => handleFilterChange('maxFeGross', e.target.value)}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <TextField
-                    fullWidth
-                    label="Min BE Gross"
-                    type="number"
-                    value={filters.minBeGross}
-                    onChange={(e) => handleFilterChange('minBeGross', e.target.value)}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <TextField
-                    fullWidth
-                    label="Max BE Gross"
-                    type="number"
-                    value={filters.maxBeGross}
-                    onChange={(e) => handleFilterChange('maxBeGross', e.target.value)}
-                  />
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
                   <FormControl fullWidth>
@@ -386,7 +325,19 @@ function DealList() {
               </TableHead>
               <TableBody>
                 {filteredDeals.map((deal) => (
-                  <TableRow key={deal.id} hover>
+                  <TableRow 
+                    key={deal.id} 
+                    hover 
+                    onClick={() => handleDealClick(deal)}
+                    sx={{ 
+                      cursor: 'pointer',
+                      '&:hover': {
+                        backgroundColor: 'action.hover',
+                        transform: 'scale(1.01)',
+                        transition: 'all 0.2s ease-in-out'
+                      }
+                    }}
+                  >
                     <TableCell>{deal.id}</TableCell>
                     <TableCell>{formatDate(deal.date)}</TableCell>
                     <TableCell>{deal.stock_number || '-'}</TableCell>
@@ -425,6 +376,166 @@ function DealList() {
             </CardContent>
           </Card>
         )}
+
+        {/* Deal Detail Dialog */}
+        <Dialog 
+          open={detailDialogOpen} 
+          onClose={handleCloseDialog}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="h6">
+                Deal #{selectedDeal?.id} - {selectedDeal?.name}
+              </Typography>
+              <IconButton onClick={handleCloseDialog}>
+                <ClearIcon />
+              </IconButton>
+            </Box>
+          </DialogTitle>
+          <DialogContent>
+            {selectedDeal && (
+              <Grid container spacing={3}>
+                {/* Basic Information */}
+                <Grid item xs={12}>
+                  <Typography variant="h6" gutterBottom sx={{ color: 'primary.main' }}>
+                    Basic Information
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Typography variant="subtitle2" color="text.secondary">Stock Number</Typography>
+                  <Typography variant="body1">{selectedDeal.stock_number || 'N/A'}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Typography variant="subtitle2" color="text.secondary">Date</Typography>
+                  <Typography variant="body1">{formatDate(selectedDeal.date)}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Typography variant="subtitle2" color="text.secondary">Type</Typography>
+                  <Chip label={selectedDeal.type || 'Unknown'} size="small" />
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Typography variant="subtitle2" color="text.secondary">Salesperson</Typography>
+                  <Typography variant="body1">{selectedDeal.salesperson_name || 'N/A'}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Typography variant="subtitle2" color="text.secondary">Bank</Typography>
+                  <Typography variant="body1">{selectedDeal.bank || 'N/A'}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Typography variant="subtitle2" color="text.secondary">Funded Date</Typography>
+                  <Typography variant="body1">{formatDate(selectedDeal.funded_date) || 'Not Funded'}</Typography>
+                </Grid>
+
+                {/* Financial Information */}
+                <Grid item xs={12}>
+                  <Typography variant="h6" gutterBottom sx={{ color: 'primary.main', mt: 2 }}>
+                    Financial Information
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Typography variant="subtitle2" color="text.secondary">FE Gross</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'success.main' }}>
+                    {formatCurrency(selectedDeal.fe_gross)}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Typography variant="subtitle2" color="text.secondary">BE Gross</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'success.main' }}>
+                    {formatCurrency(selectedDeal.be_gross)}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Typography variant="subtitle2" color="text.secondary">Total Gross</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                    {formatCurrency((selectedDeal.fe_gross || 0) + (selectedDeal.be_gross || 0))}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Typography variant="subtitle2" color="text.secondary">Split %</Typography>
+                  <Typography variant="body1">{selectedDeal.split ? `${selectedDeal.split}%` : 'N/A'}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Typography variant="subtitle2" color="text.secondary">AVP</Typography>
+                  <Typography variant="body1">{formatCurrency(selectedDeal.avp)}</Typography>
+                </Grid>
+
+                {/* Product Sales */}
+                <Grid item xs={12}>
+                  <Typography variant="h6" gutterBottom sx={{ color: 'primary.main', mt: 2 }}>
+                    Product Sales
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Typography variant="subtitle2" color="text.secondary">Reserve</Typography>
+                  <Typography variant="body1">{formatCurrency(selectedDeal.reserve)}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Typography variant="subtitle2" color="text.secondary">Rewards</Typography>
+                  <Typography variant="body1">{formatCurrency(selectedDeal.rewards)}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Typography variant="subtitle2" color="text.secondary">VSC</Typography>
+                  <Typography variant="body1">{formatCurrency(selectedDeal.vsc)}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Typography variant="subtitle2" color="text.secondary">Maintenance</Typography>
+                  <Typography variant="body1">{formatCurrency(selectedDeal.maintenance)}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Typography variant="subtitle2" color="text.secondary">GAP</Typography>
+                  <Typography variant="body1">{formatCurrency(selectedDeal.gap)}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Typography variant="subtitle2" color="text.secondary">Cilajet</Typography>
+                  <Typography variant="body1">{formatCurrency(selectedDeal.cilajet)}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Typography variant="subtitle2" color="text.secondary">Diamon</Typography>
+                  <Typography variant="body1">{formatCurrency(selectedDeal.diamon)}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Typography variant="subtitle2" color="text.secondary">Key</Typography>
+                  <Typography variant="body1">{formatCurrency(selectedDeal.key_product)}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Typography variant="subtitle2" color="text.secondary">Collision</Typography>
+                  <Typography variant="body1">{formatCurrency(selectedDeal.collision_product)}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Typography variant="subtitle2" color="text.secondary">Dent</Typography>
+                  <Typography variant="body1">{formatCurrency(selectedDeal.dent_product)}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Typography variant="subtitle2" color="text.secondary">Excess</Typography>
+                  <Typography variant="body1">{formatCurrency(selectedDeal.excess)}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Typography variant="subtitle2" color="text.secondary">PPF</Typography>
+                  <Typography variant="body1">{formatCurrency(selectedDeal.ppf)}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Typography variant="subtitle2" color="text.secondary">Wheel & Tire</Typography>
+                  <Typography variant="body1">{formatCurrency(selectedDeal.wheel_and_tire)}</Typography>
+                </Grid>
+              </Grid>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDialog}>Close</Button>
+            <Button 
+              variant="contained" 
+              startIcon={<EditIcon />}
+              onClick={() => {
+                // TODO: Navigate to edit form or open edit dialog
+                handleCloseDialog();
+              }}
+            >
+              Edit Deal
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </LocalizationProvider>
   );

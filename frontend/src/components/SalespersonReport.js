@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 /**
@@ -9,8 +9,10 @@ import axios from 'axios';
  * workbook, showing how salespeople are paid based on their deals.
  */
 function SalespersonReport({ salespersonId }) {
-  const [month, setMonth] = useState('');
-  const [year, setYear] = useState('');
+  // Default to current month and year (MTD)
+  const currentDate = new Date();
+  const [month, setMonth] = useState(currentDate.getMonth() + 1); // getMonth() returns 0-11
+  const [year, setYear] = useState(currentDate.getFullYear());
   const [data, setData] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -31,6 +33,11 @@ function SalespersonReport({ salespersonId }) {
       setLoading(false);
     }
   };
+
+  // Auto-fetch report when component mounts with MTD defaults
+  useEffect(() => {
+    fetchReport();
+  }, []); // Empty dependency array means this runs once on mount
 
   return (
     <div>
@@ -56,14 +63,14 @@ function SalespersonReport({ salespersonId }) {
               style={{ width: '5em', marginLeft: '0.3em' }}
             />
           </label>
-          <button onClick={fetchReport}>Generate</button>
+          <button onClick={fetchReport}>Refresh</button>
       </div>
       {loading ? (
         <p>Loading…</p>
       ) : error ? (
         <p style={{ color: 'red' }}>{error}</p>
       ) : data.length === 0 ? (
-        <p>No data. Choose a month/year and click Generate.</p>
+        <p>No data found for the selected month/year.</p>
       ) : (
         <table border="1" cellPadding="5" style={{ borderCollapse: 'collapse', width: '100%' }}>
           <thead>

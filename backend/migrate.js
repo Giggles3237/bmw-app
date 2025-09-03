@@ -68,9 +68,92 @@ function cleanString(value) {
  */
 function parseDate(value) {
   if (!value) return null;
-  if (value instanceof Date) return value;
-  const d = new Date(value);
-  return isNaN(d.getTime()) ? null : d;
+  
+  // If it's already a Date object (from ExcelJS), return it
+  if (value instanceof Date) {
+    return value;
+  }
+  
+  // If it's a number (Excel serial number), convert it
+  if (typeof value === 'number') {
+    // Excel dates are number of days since 1900-01-01
+    // JavaScript dates are milliseconds since 1970-01-01
+    const excelEpoch = new Date(1900, 0, 1);
+    const daysSinceEpoch = value - 1; // Excel counts from 1, not 0
+    const milliseconds = daysSinceEpoch * 24 * 60 * 60 * 1000;
+    const date = new Date(excelEpoch.getTime() + milliseconds);
+    return isNaN(date.getTime()) ? null : date;
+  }
+  
+  // If it's a string, try to parse it
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    
+    // Try different date formats
+    const dateFormats = [
+      'MM/DD/YYYY',
+      'MM-DD-YYYY', 
+      'YYYY-MM-DD',
+      'MM/DD/YY',
+      'MM-DD-YY'
+    ];
+    
+    for (const format of dateFormats) {
+      const parsed = parseDateString(trimmed, format);
+      if (parsed) return parsed;
+    }
+    
+    // Try standard Date constructor as fallback
+    const date = new Date(trimmed);
+    return isNaN(date.getTime()) ? null : date;
+  }
+  
+  return null;
+}
+
+/**
+ * Parse date string with specific format
+ */
+function parseDateString(dateStr, format) {
+  try {
+    if (format === 'MM/DD/YYYY' || format === 'MM-DD-YYYY') {
+      const separator = format.includes('/') ? '/' : '-';
+      const parts = dateStr.split(separator);
+      if (parts.length === 3) {
+        const month = parseInt(parts[0]) - 1; // JS months are 0-based
+        const day = parseInt(parts[1]);
+        const year = parseInt(parts[2]);
+        const date = new Date(year, month, day);
+        return isNaN(date.getTime()) ? null : date;
+      }
+    } else if (format === 'YYYY-MM-DD') {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        const year = parseInt(parts[0]);
+        const month = parseInt(parts[1]) - 1;
+        const day = parseInt(parts[2]);
+        const date = new Date(year, month, day);
+        return isNaN(date.getTime()) ? null : date;
+      }
+    } else if (format === 'MM/DD/YY' || format === 'MM-DD-YY') {
+      const separator = format.includes('/') ? '/' : '-';
+      const parts = dateStr.split(separator);
+      if (parts.length === 3) {
+        const month = parseInt(parts[0]) - 1;
+        const day = parseInt(parts[1]);
+        let year = parseInt(parts[2]);
+        // Convert 2-digit year to 4-digit
+        if (year < 50) year += 2000;
+        else if (year < 100) year += 1900;
+        const date = new Date(year, month, day);
+        return isNaN(date.getTime()) ? null : date;
+      }
+    }
+  } catch (e) {
+    console.log('Error parsing date:', dateStr, format, e.message);
+  }
+  return null;
 }
 
 /**
@@ -151,8 +234,8 @@ async function importData() {
       headerMap[header] = colNumber;
     }
   });
-  // Required columns
-  const required = ['#', 'Date', 'Salesperson', 'Finance Manager'];
+  // Required columns - updated to match your cleaned DataMaster.xlsx
+  const required = ['Date', 'Stock #', 'Name', 'Salesperson'];
   required.forEach((key) => {
     if (!headerMap[key]) {
       throw new Error(`Missing required column "${key}" in Data Master sheet`);
@@ -173,12 +256,12 @@ async function importData() {
     }
     
     // Check if the required column exists before trying to access it
-    if (!headerMap['#'] || !row.getCell(headerMap['#'])) {
+    if (!headerMap['Date'] || !row.getCell(headerMap['Date'])) {
       continue;
     }
     
-    const externalId = row.getCell(headerMap['#']).value;
-    if (!externalId) {
+    const rawDateVal = row.getCell(headerMap['Date']).value;
+    if (!rawDateVal) {
       continue; // skip empty rows
     }
     // Parse each field using helper functions.  Some columns may
@@ -205,11 +288,13 @@ async function importData() {
       console.log(`Row ${i} - Stock # cleaned:`, stockNumberVal);
       console.log(`Row ${i} - Name cleaned:`, nameVal);
       console.log(`Row ${i} - Salesperson cleaned:`, salespersonName);
+      console.log(`Row ${i} - Date raw:`, headerMap['Date'] ? row.getCell(headerMap['Date']).value : 'N/A');
+      console.log(`Row ${i} - Date parsed:`, dateVal);
+      console.log(`Row ${i} - Funded raw:`, headerMap['Funded'] ? row.getCell(headerMap['Funded']).value : 'N/A');
+      console.log(`Row ${i} - Funded parsed:`, fundedVal);
     }
     const splitVal = toNumber(headerMap['Split'] ? row.getCell(headerMap['Split']).value : null);
     const typeVal = cleanString(headerMap['Type'] ? row.getCell(headerMap['Type']).value : null);
-    const usedCarSourceVal = cleanString(headerMap['Used Car Source'] ? row.getCell(headerMap['Used Car Source']).value : null);
-    const ageVal = toNumber(headerMap['Age'] ? row.getCell(headerMap['Age']).value : null);
     const feGrossVal = toNumber(headerMap['FE Gross'] ? row.getCell(headerMap['FE Gross']).value : null);
     const avpVal = toNumber(headerMap['AVP'] ? row.getCell(headerMap['AVP']).value : null);
     const beGrossVal = toNumber(headerMap['BE Gross'] ? row.getCell(headerMap['BE Gross']).value : null);
@@ -227,26 +312,13 @@ async function importData() {
     const excessVal = toNumber(headerMap['Excess'] ? row.getCell(headerMap['Excess']).value : null);
     const ppfVal = toNumber(headerMap['PPF'] ? row.getCell(headerMap['PPF']).value : null);
     const wheelVal = toNumber(headerMap['Wheel and Tire'] ? row.getCell(headerMap['Wheel and Tire']).value : null);
-    const productCountVal = toNumber(headerMap['ProductCount'] ? row.getCell(headerMap['ProductCount']).value : null);
-    const moneyVal = toNumber(headerMap['MONEY'] ? row.getCell(headerMap['MONEY']).value : null);
-    const titlingVal = toNumber(headerMap['TITLING'] ? row.getCell(headerMap['TITLING']).value : null);
-    const mileageVal = toNumber(headerMap['MILEAGE'] ? row.getCell(headerMap['MILEAGE']).value : null);
-    const licenseVal = toNumber(headerMap['LICENSE/INSURANCE'] ? row.getCell(headerMap['LICENSE/INSURANCE']).value : null);
-    const feesVal = toNumber(headerMap['FEES'] ? row.getCell(headerMap['FEES']).value : null);
-    const cleanVal = parseBoolean(headerMap['Clean'] ? row.getCell(headerMap['Clean']).value : null);
-    const payoffFlagVal = parseBoolean(headerMap['Payoff Flag'] ? row.getCell(headerMap['Payoff Flag']).value : null);
-    const payoffSentVal = parseDate(headerMap['Payoff Sent'] ? row.getCell(headerMap['Payoff Sent']).value : null);
-    const atcFlagVal = parseBoolean(headerMap['ATC Flag'] ? row.getCell(headerMap['ATC Flag']).value : null);
-    const registrationSentVal = parseDate(headerMap['Registration Sent'] ? row.getCell(headerMap['Registration Sent']).value : null);
-    const notesVal = cleanString(headerMap['Notes'] ? row.getCell(headerMap['Notes']).value : null);
-    const split2Val = toNumber(headerMap['Split.1'] ? row.getCell(headerMap['Split.1']).value : null);
 
     // Resolve salesperson and finance manager IDs
     const salespersonId = await getSalespersonId(salespersonName);
     const financeManagerId = await getFinanceManagerId(financeManagerName);
-    // Build insert object
+    
+    // Build insert object - updated to match your cleaned DataMaster.xlsx columns
     const dealData = {
-      external_id: toNumber(externalId),
       date: dateVal,
       month: monthVal,
       year: yearVal,
@@ -257,8 +329,6 @@ async function importData() {
       salesperson_id: salespersonId,
       split: splitVal,
       type: typeVal,
-      used_car_source: usedCarSourceVal,
-      age: ageVal,
       fe_gross: feGrossVal,
       avp: avpVal,
       be_gross: beGrossVal,
@@ -275,20 +345,7 @@ async function importData() {
       dent_product: dentVal,
       excess: excessVal,
       ppf: ppfVal,
-      wheel_and_tire: wheelVal,
-      product_count: productCountVal,
-      money: moneyVal,
-      titling: titlingVal,
-      mileage: mileageVal,
-      license_insurance: licenseVal,
-      fees: feesVal,
-      clean: cleanVal,
-      payoff_flag: payoffFlagVal,
-      payoff_sent: payoffSentVal,
-      atc_flag: atcFlagVal,
-      registration_sent: registrationSentVal,
-      notes: notesVal,
-      split2: split2Val
+      wheel_and_tire: wheelVal
     };
     // Prepare SQL insert statement
     const columns = Object.keys(dealData).filter((key) => dealData[key] !== undefined);

@@ -26,12 +26,15 @@ import {
   Add as AddIcon,
   Person as PersonIcon,
   Assessment as AssessmentIcon,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  AccountBalance as AccountBalanceIcon
 } from '@mui/icons-material';
 import DealList from './components/DealList';
 import DealForm from './components/DealForm';
 import SalespersonReport from './components/SalespersonReport';
 import UnitReport from './components/UnitReport';
+import Admin from './components/Admin';
+import Funding from './components/Funding';
 
 const drawerWidth = 240;
 
@@ -75,8 +78,10 @@ const theme = createTheme({
 const menuItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, view: 'deals' },
   { text: 'Add Deal', icon: <AddIcon />, view: 'add' },
+  { text: 'Funding', icon: <AccountBalanceIcon />, view: 'funding' },
   { text: 'Salesperson Report', icon: <PersonIcon />, view: 'salespersonReport' },
   { text: 'Unit Report', icon: <AssessmentIcon />, view: 'unitReport' },
+  { text: 'Admin', icon: <SettingsIcon />, view: 'admin' },
 ];
 
 function App() {
@@ -237,10 +242,12 @@ function App() {
             <Paper sx={{ p: 3, minHeight: 'calc(100vh - 120px)' }}>
               {view === 'deals' && <DealList />}
               {view === 'add' && <DealForm />}
+              {view === 'funding' && <Funding />}
               {view === 'salespersonReport' && (
                 <SalespersonReport salespersonId={savedId} />
               )}
               {view === 'unitReport' && <UnitReport />}
+              {view === 'admin' && <Admin />}
             </Paper>
           </Container>
         </Box>

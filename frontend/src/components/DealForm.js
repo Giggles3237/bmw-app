@@ -17,61 +17,52 @@ import {
   MenuItem,
   Switch,
   FormControlLabel,
-  InputAdornment
+  InputAdornment,
+  IconButton,
+  Tooltip
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import axios from 'axios';
+import { format } from 'date-fns';
+import CalculateIcon from '@mui/icons-material/Calculate';
 
 function DealForm() {
   const [form, setForm] = useState({
     // Basic Information
+    deal_number: '',
     external_id: '',
-    date: '',
-    month: '',
-    year: '',
-    bank: '',
+    date: new Date(),
+    bank: 'BMW',
     funded_date: '',
     stock_number: '',
     name: '',
     salesperson: '',
     finance_manager: '',
     type: '',
-    split: '',
-    split2: '',
-    
-    // Vehicle Information
-    used_car_source: '',
-    age: '',
     
     // Financial Information
     fe_gross: '',
     avp: '',
+    msrp: '',
+    brand: 'BMW',
     be_gross: '',
     reserve: '',
     rewards: '',
     
-    // Product Sales
-    vsc: '',
-    maintenance: '',
-    gap: '',
-    cilajet: '',
-    diamon: '',
-    key_product: '',
-    collision_product: '',
-    dent_product: '',
-    excess: '',
-    ppf: '',
-    wheel_and_tire: '',
-    product_count: '',
-    
-    // Additional Fees
-    money: '',
-    titling: '',
-    mileage: '',
-    license_insurance: '',
-    fees: '',
+         // Product Sales
+     vsc: '',
+     maintenance: '',
+     gap: '',
+     cilajet: '',
+     key_product: '',
+     collision_product: '',
+     dent_product: '',
+     excess: '',
+     ppf: '',
+     wheel_and_tire: '',
+     product_count: '',
     
     // Status Flags
     clean: false,
@@ -86,6 +77,19 @@ function DealForm() {
 
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [avpCalculationMode, setAvpCalculationMode] = useState('direct'); // 'direct' or 'calculated'
+     const [productCalculationModes, setProductCalculationModes] = useState({
+     vsc: 'direct',
+     maintenance: 'direct',
+     gap: 'direct',
+     cilajet: 'direct',
+     key_product: 'direct',
+     collision_product: 'direct',
+     dent_product: 'direct',
+     excess: 'direct',
+     ppf: 'direct',
+     wheel_and_tire: 'direct'
+   });
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -94,6 +98,86 @@ function DealForm() {
 
   const handleDateChange = (field, date) => {
     setForm({ ...form, [field]: date });
+  };
+
+  // AVP calculation based on brand and MSRP
+  const calculateAVP = (msrp, brand) => {
+    if (!msrp || !brand) return '';
+    
+    const msrpValue = parseFloat(msrp);
+    const adjustedMSRP = msrpValue - 1175; // Subtract $1,175 from MSRP
+    
+    if (adjustedMSRP <= 0) return '0.00'; // Prevent negative values
+    
+    const percentages = {
+      'BMW': 0.05, // 5%
+      'MINI': 0.04 // 4%
+    };
+    
+    const percentage = percentages[brand] || 0;
+    return (adjustedMSRP * percentage).toFixed(2);
+  };
+
+  const handleAVPModeChange = (mode) => {
+    setAvpCalculationMode(mode);
+    if (mode === 'calculated') {
+      // Clear direct AVP input when switching to calculated mode
+      setForm({ ...form, avp: '' });
+    } else {
+      // Clear MSRP and brand when switching to direct mode
+      setForm({ ...form, msrp: '', brand: 'BMW' });
+    }
+  };
+
+  const handleMSRPChange = (e) => {
+    const msrp = e.target.value;
+    setForm({ ...form, msrp });
+    
+    if (avpCalculationMode === 'calculated' && msrp && form.brand) {
+      const calculatedAVP = calculateAVP(msrp, form.brand);
+      setForm({ ...form, msrp, avp: calculatedAVP });
+    }
+  };
+
+  const handleBrandChange = (e) => {
+    const brand = e.target.value;
+    setForm({ ...form, brand });
+    
+    if (avpCalculationMode === 'calculated' && form.msrp && brand) {
+      const calculatedAVP = calculateAVP(form.msrp, brand);
+      setForm({ ...form, brand, avp: calculatedAVP });
+    }
+  };
+
+  // Product calculation handlers
+  const handleProductModeChange = (product, mode) => {
+    setProductCalculationModes(prev => ({ ...prev, [product]: mode }));
+    
+    if (mode === 'calculated') {
+      // Clear direct gross input when switching to calculated mode
+      setForm({ ...form, [product]: '' });
+    } else {
+      // Clear price and cost when switching to direct mode
+      setForm({ ...form, [`${product}_price`]: '', [`${product}_cost`]: '' });
+    }
+  };
+
+  const handleProductPriceChange = (product, price) => {
+    setForm({ ...form, [`${product}_price`]: price });
+    
+    if (productCalculationModes[product] === 'calculated' && price && form[`${product}_cost`]) {
+      const calculatedGross = (parseFloat(price) - parseFloat(form[`${product}_cost`])).toFixed(2);
+      setForm({ ...form, [`${product}_price`]: price, [product]: calculatedGross });
+    }
+  };
+
+  const handleProductCostChange = (product, cost) => {
+    setForm({ ...form, [`${product}_cost`]: cost });
+    
+    if (productCalculationModes[product] === 'calculated' && form[`${product}_price`] && cost) {
+      const calculatedGross = (parseFloat(form[`${product}_price`]) - parseFloat(cost)).toFixed(2);
+      setForm({ ...form, [`${product}_cost`]: cost, [product]: calculatedGross });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -113,17 +197,29 @@ function DealForm() {
       await axios.post('/api/deals', payload);
       setMessage({ type: 'success', text: 'Deal saved successfully!' });
       
-      // Clear form
-      setForm({
-        external_id: '', date: '', month: '', year: '', bank: '', funded_date: '',
-        stock_number: '', name: '', salesperson: '', finance_manager: '', type: '',
-        split: '', split2: '', used_car_source: '', age: '', fe_gross: '', avp: '',
-        be_gross: '', reserve: '', rewards: '', vsc: '', maintenance: '', gap: '',
-        cilajet: '', diamon: '', key_product: '', collision_product: '', dent_product: '',
-        excess: '', ppf: '', wheel_and_tire: '', product_count: '', money: '',
-        titling: '', mileage: '', license_insurance: '', fees: '', clean: false,
-        payoff_flag: false, payoff_sent: '', atc_flag: false, registration_sent: '', notes: ''
-      });
+             // Clear form
+       setForm({
+         deal_number: '', external_id: '', date: new Date(), bank: 'BMW', funded_date: '',
+         stock_number: '', name: '', salesperson: '', finance_manager: '', type: '',
+         fe_gross: '', avp: '', msrp: '', brand: 'BMW', be_gross: '', reserve: '', rewards: '', vsc: '', 
+         maintenance: '', gap: '', cilajet: '', key_product: '', 
+         collision_product: '', dent_product: '', excess: '', ppf: '', 
+         wheel_and_tire: '', product_count: '', clean: false, payoff_flag: false, 
+         payoff_sent: '', atc_flag: false, registration_sent: '', notes: ''
+       });
+      setAvpCalculationMode('direct');
+             setProductCalculationModes({
+         vsc: 'direct',
+         maintenance: 'direct',
+         gap: 'direct',
+         cilajet: 'direct',
+         key_product: 'direct',
+         collision_product: 'direct',
+         dent_product: 'direct',
+         excess: 'direct',
+         ppf: 'direct',
+         wheel_and_tire: 'direct'
+       });
     } catch (err) {
       setMessage({ type: 'error', text: 'Failed to save deal: ' + (err.response?.data?.error || err.message) });
     } finally {
@@ -206,6 +302,107 @@ function DealForm() {
     />
   );
 
+  const renderProductField = (product, label) => {
+    const mode = productCalculationModes[product];
+    
+    return (
+      <Grid item xs={12} sm={6} md={3}>
+        <Card variant="outlined" sx={{ p: 1, position: 'relative' }}>
+          {/* Calculator Icon Button */}
+          <Box sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}>
+            <Tooltip title={mode === 'calculated' ? 'Switch to direct entry' : 'Calculate from price & cost'}>
+              <IconButton
+                size="small"
+                onClick={() => handleProductModeChange(product, mode === 'calculated' ? 'direct' : 'calculated')}
+                tabIndex={-1}
+                sx={{
+                  backgroundColor: mode === 'calculated' ? '#1976d2' : '#f5f5f5',
+                  color: mode === 'calculated' ? 'white' : '#666',
+                  '&:hover': {
+                    backgroundColor: mode === 'calculated' ? '#1565c0' : '#e0e0e0',
+                  },
+                  transition: 'all 0.2s ease-in-out',
+                  transform: mode === 'calculated' ? 'scale(1.1)' : 'scale(1)',
+                }}
+              >
+                <CalculateIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+          
+          <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold', pr: 4 }}>
+            {label}
+          </Typography>
+          
+          {mode === 'direct' ? (
+                         <TextField
+               fullWidth
+               size="small"
+               label=""
+               name={product}
+               type="number"
+               value={form[product]}
+               onChange={handleChange}
+               inputProps={{ step: '0.01' }}
+               InputProps={{
+                 startAdornment: <InputAdornment position="start">$</InputAdornment>,
+               }}
+             />
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <TextField
+                fullWidth
+                size="small"
+                label="Product Price"
+                name={`${product}_price`}
+                type="number"
+                value={form[`${product}_price`] || ''}
+                onChange={(e) => handleProductPriceChange(product, e.target.value)}
+                inputProps={{ step: '0.01' }}
+                InputProps={{
+                  startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                }}
+              />
+              <TextField
+                fullWidth
+                size="small"
+                label="Product Cost"
+                name={`${product}_cost`}
+                type="number"
+                value={form[`${product}_cost`] || ''}
+                onChange={(e) => handleProductCostChange(product, e.target.value)}
+                inputProps={{ step: '0.01' }}
+                InputProps={{
+                  startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                }}
+              />
+                             <TextField
+                 fullWidth
+                 size="small"
+                 label="Calculated"
+                 value={form[product] ? `$${form[product]}` : ''}
+                 InputProps={{
+                   readOnly: true,
+                 }}
+                 sx={{ 
+                   backgroundColor: '#f8f9fa',
+                   '& .MuiInputBase-input': {
+                     fontWeight: 'bold',
+                     color: '#1976d2'
+                   }
+                 }}
+                 helperText={form[`${product}_price`] && form[`${product}_cost`] ? 
+                   `$${form[`${product}_price`]} - $${form[`${product}_cost`]} = $${form[product]}` : 
+                   'Enter price and cost to calculate'
+                 }
+               />
+            </Box>
+          )}
+        </Card>
+      </Grid>
+    );
+  };
+
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Box>
@@ -223,61 +420,34 @@ function DealForm() {
           {/* Basic Information */}
           <Card sx={{ mb: 3 }}>
             <CardHeader title="Basic Information" />
-            <CardContent>
-              <Grid container spacing={2}>
+                         <CardContent>
+               <Grid container spacing={2}>
+                 <Grid item xs={12} sm={6} md={3}>
+                   {renderField('deal_number', 'Deal Number', 'text', true)}
+                 </Grid>
+                 <Grid item xs={12} sm={6} md={3}>
+                   {renderField('date', 'Date', 'date', true)}
+                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                  {renderField('external_id', 'External ID', 'number')}
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  {renderField('date', 'Date', 'date', true)}
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  {renderField('month', 'Month', 'number')}
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  {renderField('year', 'Year', 'number')}
-                </Grid>
-                <Grid item xs={12} sm={6} md={4}>
                   {renderField('bank', 'Bank')}
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid item xs={12} sm={6} md={3}>
                   {renderField('funded_date', 'Funded Date', 'date')}
                 </Grid>
-                <Grid item xs={12} sm={6} md={4}>
+                <Grid item xs={12} sm={6} md={3}>
                   {renderField('stock_number', 'Stock Number')}
                 </Grid>
                 <Grid item xs={12} sm={6} md={6}>
                   {renderField('name', 'Customer Name', 'text', true)}
                 </Grid>
-                <Grid item xs={12} sm={6} md={6}>
-                  {renderField('type', 'Vehicle Type')}
-                </Grid>
+                                 <Grid item xs={12} sm={6} md={6}>
+                   {renderField('type', 'Vehicle Type', 'select', false, ['New BMW', 'New MINI', 'CPO BMW', 'CPO MINI', 'Used BMW', 'Used MINI'])}
+                 </Grid>
                 <Grid item xs={12} sm={6} md={6}>
                   {renderField('salesperson', 'Salesperson')}
                 </Grid>
                 <Grid item xs={12} sm={6} md={6}>
                   {renderField('finance_manager', 'Finance Manager')}
-                </Grid>
-                <Grid item xs={12} sm={6} md={6}>
-                  {renderField('split', 'Split %', 'number')}
-                </Grid>
-                <Grid item xs={12} sm={6} md={6}>
-                  {renderField('split2', 'Split 2 %', 'number')}
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
-
-          {/* Vehicle Information */}
-          <Card sx={{ mb: 3 }}>
-            <CardHeader title="Vehicle Information" />
-            <CardContent>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6} md={6}>
-                  {renderField('used_car_source', 'Used Car Source')}
-                </Grid>
-                <Grid item xs={12} sm={6} md={6}>
-                  {renderField('age', 'Age', 'number')}
                 </Grid>
               </Grid>
             </CardContent>
@@ -291,9 +461,102 @@ function DealForm() {
                 <Grid item xs={12} sm={6} md={4}>
                   {renderField('fe_gross', 'FE Gross', 'number')}
                 </Grid>
+                
+                {/* AVP Section */}
                 <Grid item xs={12} sm={6} md={4}>
-                  {renderField('avp', 'AVP', 'number')}
+                  <Card variant="outlined" sx={{ p: 1, position: 'relative' }}>
+                    {/* Calculator Icon Button */}
+                    <Box sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}>
+                      <Tooltip title={avpCalculationMode === 'calculated' ? 'Switch to direct entry' : 'Calculate from MSRP & brand'}>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleAVPModeChange(avpCalculationMode === 'calculated' ? 'direct' : 'calculated')}
+                          tabIndex={-1}
+                          sx={{
+                            backgroundColor: avpCalculationMode === 'calculated' ? '#1976d2' : '#f5f5f5',
+                            color: avpCalculationMode === 'calculated' ? 'white' : '#666',
+                            '&:hover': {
+                              backgroundColor: avpCalculationMode === 'calculated' ? '#1565c0' : '#e0e0e0',
+                            },
+                            transition: 'all 0.2s ease-in-out',
+                            transform: avpCalculationMode === 'calculated' ? 'scale(1.1)' : 'scale(1)',
+                          }}
+                        >
+                          <CalculateIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                    
+                    <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold', pr: 4 }}>
+                      AVP
+                    </Typography>
+                    
+                    {avpCalculationMode === 'direct' ? (
+                                             <TextField
+                         fullWidth
+                         size="small"
+                         label="AVP"
+                         name="avp"
+                         type="number"
+                         value={form.avp}
+                         onChange={handleChange}
+                         inputProps={{ step: '0.01' }}
+                         InputProps={{
+                           startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                         }}
+                       />
+                    ) : (
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          label="MSRP"
+                          name="msrp"
+                          type="number"
+                          value={form.msrp}
+                          onChange={handleMSRPChange}
+                          inputProps={{ step: '0.01' }}
+                          InputProps={{
+                            startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                          }}
+                        />
+                        <FormControl fullWidth size="small">
+                          <InputLabel>Brand</InputLabel>
+                          <Select
+                            name="brand"
+                            value={form.brand}
+                            label="Brand"
+                            onChange={handleBrandChange}
+                          >
+                            <MenuItem value="BMW">BMW (5%)</MenuItem>
+                            <MenuItem value="MINI">MINI (4%)</MenuItem>
+                          </Select>
+                        </FormControl>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          label="Calculated AVP"
+                          value={form.avp ? `$${form.avp}` : ''}
+                          InputProps={{
+                            readOnly: true,
+                          }}
+                          sx={{ 
+                            backgroundColor: '#f8f9fa',
+                            '& .MuiInputBase-input': {
+                              fontWeight: 'bold',
+                              color: '#1976d2'
+                            }
+                          }}
+                          helperText={form.msrp && form.brand ? 
+                            `${form.brand} rate: ${form.brand === 'BMW' ? '5%' : '4%'} of ($${form.msrp} - $1,175)` : 
+                            'Enter MSRP and select brand to calculate'
+                          }
+                        />
+                      </Box>
+                    )}
+                  </Card>
                 </Grid>
+                
                 <Grid item xs={12} sm={6} md={4}>
                   {renderField('be_gross', 'BE Gross', 'number')}
                 </Grid>
@@ -307,71 +570,24 @@ function DealForm() {
             </CardContent>
           </Card>
 
-          {/* Product Sales */}
-          <Card sx={{ mb: 3 }}>
-            <CardHeader title="Product Sales" />
+                     {/* Product Sales */}
+           <Card sx={{ mb: 3 }}>
+             <CardHeader title={`Product Sales (${(() => {
+               const productFields = ['vsc', 'maintenance', 'gap', 'cilajet', 'key_product', 'collision_product', 'dent_product', 'excess', 'ppf', 'wheel_and_tire'];
+               return productFields.filter(field => form[field] && form[field] !== '').length;
+             })()})`} />
             <CardContent>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6} md={3}>
-                  {renderField('vsc', 'VSC', 'number')}
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  {renderField('maintenance', 'Maintenance', 'number')}
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  {renderField('gap', 'GAP', 'number')}
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  {renderField('cilajet', 'Cilajet', 'number')}
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  {renderField('diamon', 'Diamon', 'number')}
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  {renderField('key_product', 'Key Product', 'number')}
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  {renderField('collision_product', 'Collision Product', 'number')}
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  {renderField('dent_product', 'Dent Product', 'number')}
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  {renderField('excess', 'Excess', 'number')}
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  {renderField('ppf', 'PPF', 'number')}
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  {renderField('wheel_and_tire', 'Wheel & Tire', 'number')}
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  {renderField('product_count', 'Product Count', 'number')}
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
-
-          {/* Additional Fees */}
-          <Card sx={{ mb: 3 }}>
-            <CardHeader title="Additional Fees" />
-            <CardContent>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6} md={3}>
-                  {renderField('money', 'Money', 'number')}
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  {renderField('titling', 'Titling', 'number')}
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  {renderField('mileage', 'Mileage', 'number')}
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  {renderField('license_insurance', 'License/Insurance', 'number')}
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  {renderField('fees', 'Fees', 'number')}
-                </Grid>
+                                                  {renderProductField('vsc', 'VSC')}
+                 {renderProductField('maintenance', 'Maintenance')}
+                 {renderProductField('gap', 'GAP')}
+                 {renderProductField('cilajet', 'Cilajet')}
+                 {renderProductField('key_product', 'Key')}
+                 {renderProductField('collision_product', 'Collision')}
+                 {renderProductField('dent_product', 'Dent')}
+                 {renderProductField('excess', 'Excess')}
+                 {renderProductField('ppf', 'PPF')}
+                 {renderProductField('wheel_and_tire', 'Wheel & Tire')}
               </Grid>
             </CardContent>
           </Card>
