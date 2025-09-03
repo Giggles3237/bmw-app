@@ -18,6 +18,7 @@ application supports the full workflow described by Chris Lasko:
    information for payroll (Salesperson report) and for summarising
    vehicle output (Unit report).  Each salesperson can view only
    their own performance by supplying their salesperson ID.
+4. **User Management** – The application now includes a complete user authentication system with role-based access control. Users can have different roles (admin, manager, salesperson, finance, viewer) and may or may not be associated with salesperson records.
 
 ## Project structure
 
@@ -27,10 +28,15 @@ bmw-app/
 │   ├── db.js         # Database connection pool
 │   ├── index.js      # Entry point for the API server
 │   ├── migrate.js    # Imports the Data Master sheet into MySQL
+│   ├── create-admin.js # Creates initial admin user
 │   ├── package.json  # Backend dependencies and scripts
 │   ├── .env.example  # Example environment variables
 │   ├── schema.sql    # SQL to create the database schema
 │   └── routes/       # API route handlers
+│       ├── auth.js   # Authentication and user management routes
+│       ├── deals.js  # Deal management routes
+│       ├── reports.js # Reporting routes
+│       └── salespersons.js # Salesperson management routes
 ├── frontend/         # React application (Create React App layout)
 │   ├── public/
 │   │   └── index.html
@@ -38,6 +44,8 @@ bmw-app/
 │   │   ├── App.js
 │   │   ├── index.js
 │   │   └── components/
+│   │       ├── Login.js
+│   │       ├── UserManagement.js
 │   │       ├── DealForm.js
 │   │       ├── DealList.js
 │   │       ├── SalespersonReport.js
@@ -90,7 +98,20 @@ bmw-app/
    Replace `$MYSQL_USER` and `$MYSQL_HOST` with your actual
    values.  You will be prompted for your password.
 
-4. (Optional) Import your existing Excel data.  Copy
+4. Create an initial admin user:
+
+   ```sh
+   npm run create-admin
+   ```
+
+   This creates a default admin user with:
+   - Username: `admin`
+   - Password: `admin123`
+   - Email: `admin@bmw.com`
+   
+   **Important**: Change the password after first login for security.
+
+5. (Optional) Import your existing Excel data.  Copy
    `Einstein3.0.xlsx` into the `backend/data` folder (create it if
    necessary).  Then run the migration script:
 
@@ -104,7 +125,7 @@ bmw-app/
    script multiple times; duplicates are not currently de‑duped, so
    ensure your database is empty before importing.
 
-5. Start the API server:
+6. Start the API server:
 
    ```sh
    npm start
@@ -113,14 +134,27 @@ bmw-app/
    The server listens on the port specified in `.env` (default
    3001).  It exposes the following endpoints:
 
+   **Authentication endpoints:**
+   * `POST /api/auth/login` – user login
+   * `POST /api/auth/register` – user registration (admin only)
+   * `GET /api/auth/profile` – get current user profile
+   * `GET /api/auth/users` – list all users (admin only)
+   * `PUT /api/auth/users/:id` – update user (admin only)
+   * `PUT /api/auth/change-password` – change user password
+
+   **Deal management endpoints:**
    * `GET /api/deals` – list deals, optional `month`, `year` and
      `limit` query parameters
    * `POST /api/deals` – create a new deal
    * `GET /api/deals/:id` – retrieve a single deal
    * `PUT /api/deals/:id` – update an existing deal
    * `DELETE /api/deals/:id` – delete a deal
+
+   **Salesperson management endpoints:**
    * `GET /api/salespersons` – list salespeople
    * `POST /api/salespersons` – create a salesperson
+
+   **Reporting endpoints:**
    * `GET /api/reports/salesperson` – aggregated totals per
      salesperson; supports `month`, `year` and `salesperson_id` query
      parameters
@@ -149,11 +183,22 @@ bmw-app/
 
 3. Navigate to `http://localhost:3000` in your browser to use the app.
 
+   **Login**: You'll be prompted to log in with your username and password. Use the admin credentials created in step 4 of the backend setup.
+
+   **Role-based Access**: The application now supports different user roles:
+   * **Admin**: Full access to all features including user management
+   * **Manager**: Can view all deals, add deals, and access reports
+   * **Salesperson**: Can view deals, add deals, and view their own reports
+   * **Finance**: Can view deals and access funding and unit reports
+   * **Viewer**: Read-only access to deals and unit reports
+
+   **Features by Role**:
    * **Deals** – Displays a list of existing deals.  You can filter
      by month and year using the inputs above the table.
    * **Add Deal** – Allows entry of a basic deal record similar to
      the Deal Entry sheet.  Additional fields can be added by
      extending the form and the API.
+   * **Funding** – Finance team can track funding status and details
    * **Salesperson Report** – Summarises gross and product totals
      per salesperson for a selected month and year.  Enter your
      salesperson ID in the field at the top of the page and click
@@ -162,6 +207,8 @@ bmw-app/
    * **Unit Report** – Shows how many units of each vehicle type were
      delivered in a given month and year, along with the total FE and
      BE gross.
+   * **Admin** – System administration features
+   * **User Management** – Create and manage user accounts (admin only)
 
 ## Deploying to Azure
 
@@ -204,16 +251,17 @@ Database for MySQL.  A high‑level overview of the steps is:
 
 ## Notes
 
-* This project provides a strong foundation but does not include
-  authentication.  Salespeople currently identify themselves by
-  manually entering their salesperson ID.  For production use you
-  should integrate Azure Active Directory or another identity
-  provider and map user accounts to salesperson records in the
-  database.
+* This project now includes a complete user authentication system with role-based access control. Users can have different roles and may or may not be associated with salesperson records. The system uses JWT tokens for authentication and bcrypt for password hashing.
 * Additional reporting can be built upon the `deals` table.  For
   example, you could produce custom dashboards, track funding
   timelines, or export data to CSV.  The MySQL schema is
   intentionally normalised and easy to query.
+* For production use, consider implementing additional security measures such as:
+  * Password complexity requirements
+  * Account lockout after failed login attempts
+  * Two-factor authentication
+  * Session timeout and automatic logout
+  * Audit logging for user actions
 
 We hope this application helps streamline your finance process and
 provides your team with the robust reporting capability you need.

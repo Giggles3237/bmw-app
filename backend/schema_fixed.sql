@@ -3,9 +3,24 @@
 -- environments you should use migrations rather than dropping
 -- tables.
 DROP TABLE IF EXISTS deals;
+DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS salespersons;
 DROP TABLE IF EXISTS finance_managers;
-DROP TABLE IF EXISTS users;
+
+-- Table of salespeople.  Each salesperson has a unique name and employee number.
+-- Additional fields are included for future authentication system.
+CREATE TABLE salespersons (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  employee_number VARCHAR(20) UNIQUE,
+  email VARCHAR(255) UNIQUE,
+  phone VARCHAR(20),
+  is_active BOOLEAN DEFAULT TRUE,
+  role ENUM('salesperson', 'manager', 'admin') DEFAULT 'salesperson',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY unique_name_employee (name, employee_number)
+);
 
 -- Table of users.  This table handles authentication and user management.
 -- Users can have different roles and may or may not be associated with salespersons.
@@ -25,21 +40,6 @@ CREATE TABLE users (
     REFERENCES salespersons(id)
     ON DELETE SET NULL
     ON UPDATE CASCADE
-);
-
--- Table of salespeople.  Each salesperson has a unique name and employee number.
--- Additional fields are included for future authentication system.
-CREATE TABLE salespersons (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  employee_number VARCHAR(20) UNIQUE,
-  email VARCHAR(255) UNIQUE,
-  phone VARCHAR(20),
-  is_active BOOLEAN DEFAULT TRUE,
-  role ENUM('salesperson', 'manager', 'admin') DEFAULT 'salesperson',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY unique_name_employee (name, employee_number)
 );
 
 -- Table of finance managers.  Each finance manager also has a

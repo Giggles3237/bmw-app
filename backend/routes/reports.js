@@ -87,21 +87,31 @@ router.get('/salesperson', async (req, res) => {
  */
 router.get('/unit', async (req, res) => {
   try {
-    const { month, year } = req.query;
+    const { month, year, start_date, end_date } = req.query;
     const params = [];
     let where = '';
-    if (month) {
-      where += where ? ' AND d.month = ?' : ' WHERE d.month = ?';
-      params.push(month);
+    
+    if (start_date && end_date) {
+      // Custom date range
+      where += ' WHERE d.date >= ? AND d.date <= ?';
+      params.push(start_date, end_date);
+    } else {
+      // Month/year filtering
+      if (month) {
+        where += where ? ' AND d.month = ?' : ' WHERE d.month = ?';
+        params.push(month);
+      }
+      if (year) {
+        where += where ? ' AND d.year = ?' : ' WHERE d.year = ?';
+        params.push(year);
+      }
     }
-    if (year) {
-      where += where ? ' AND d.year = ?' : ' WHERE d.year = ?';
-      params.push(year);
-    }
+    
     const sql = `
       SELECT d.type,
              COUNT(*) AS units,
              SUM(COALESCE(d.fe_gross, 0)) AS fe_gross_total,
+             SUM(COALESCE(d.avp, 0)) AS avp_total,
              SUM(COALESCE(d.be_gross, 0)) AS be_gross_total
       FROM deals d
       ${where}

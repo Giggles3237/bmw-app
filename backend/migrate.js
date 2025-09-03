@@ -234,6 +234,9 @@ async function importData() {
       headerMap[header] = colNumber;
     }
   });
+  
+  // Debug: Log all found headers
+  console.log('Found headers:', Object.keys(headerMap));
   // Required columns - updated to match your cleaned DataMaster.xlsx
   const required = ['Date', 'Stock #', 'Name', 'Salesperson'];
   required.forEach((key) => {
@@ -298,6 +301,12 @@ async function importData() {
     const feGrossVal = toNumber(headerMap['FE Gross'] ? row.getCell(headerMap['FE Gross']).value : null);
     const avpVal = toNumber(headerMap['AVP'] ? row.getCell(headerMap['AVP']).value : null);
     const beGrossVal = toNumber(headerMap['BE Gross'] ? row.getCell(headerMap['BE Gross']).value : null);
+    
+    // Debug: Log AVP values for first few rows
+    if (insertedCount < 3) {
+      console.log(`Row ${i} - AVP raw:`, headerMap['AVP'] ? row.getCell(headerMap['AVP']).value : 'N/A');
+      console.log(`Row ${i} - AVP parsed:`, avpVal);
+    }
     const financeManagerName = cleanString(headerMap['Finance Manager'] ? row.getCell(headerMap['Finance Manager']).value : null);
     const reserveVal = toNumber(headerMap['Reserve'] ? row.getCell(headerMap['Reserve']).value : null);
     const rewardsVal = toNumber(headerMap['Rewards'] ? row.getCell(headerMap['Rewards']).value : null);

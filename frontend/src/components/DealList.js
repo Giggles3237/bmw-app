@@ -37,7 +37,8 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   Visibility as ViewIcon,
-  Edit as EditIcon
+  Edit as EditIcon,
+  Refresh as RefreshIcon
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -53,13 +54,18 @@ function DealList() {
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({
-    startDate: null,
-    endDate: null,
-    salesperson: '',
-    type: '',
-    bank: '',
-    status: ''
+  const [filters, setFilters] = useState(() => {
+    const today = new Date();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    return {
+      startDate: firstDayOfMonth,
+      endDate: lastDayOfMonth,
+      salesperson: '',
+      type: '',
+      bank: '',
+      status: ''
+    };
   });
 
   // Deal detail dialog states
@@ -70,7 +76,18 @@ function DealList() {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get('/api/deals', { params: { limit: 1000 } });
+      // Get current month and year for default filtering
+      const today = new Date();
+      const currentMonth = today.getMonth() + 1; // getMonth() returns 0-11
+      const currentYear = today.getFullYear();
+      
+      const response = await axios.get('/api/deals', { 
+        params: { 
+          month: currentMonth,
+          year: currentYear,
+          limit: 1000 
+        } 
+      });
       setDeals(response.data);
       setFilteredDeals(response.data);
     } catch (err) {
@@ -101,12 +118,24 @@ function DealList() {
       );
     }
 
-    // Apply filters
+    // Apply date filters - convert Date objects to month/year for backend filtering
     if (filters.startDate) {
-      filtered = filtered.filter(deal => new Date(deal.date) >= filters.startDate);
+      const startMonth = filters.startDate.getMonth() + 1; // getMonth() returns 0-11
+      const startYear = filters.startDate.getFullYear();
+      filtered = filtered.filter(deal => {
+        if (!deal.month || !deal.year) return false;
+        return (deal.year > startYear) || 
+               (deal.year === startYear && deal.month >= startMonth);
+      });
     }
     if (filters.endDate) {
-      filtered = filtered.filter(deal => new Date(deal.date) <= filters.endDate);
+      const endMonth = filters.endDate.getMonth() + 1;
+      const endYear = filters.endDate.getFullYear();
+      filtered = filtered.filter(deal => {
+        if (!deal.month || !deal.year) return false;
+        return (deal.year < endYear) || 
+               (deal.year === endYear && deal.month <= endMonth);
+      });
     }
     if (filters.salesperson) {
       filtered = filtered.filter(deal => 
@@ -130,9 +159,12 @@ function DealList() {
   };
 
   const clearFilters = () => {
+    const today = new Date();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     setFilters({
-      startDate: null,
-      endDate: null,
+      startDate: firstDayOfMonth,
+      endDate: lastDayOfMonth,
       salesperson: '',
       type: '',
       bank: '',
@@ -183,6 +215,14 @@ function DealList() {
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button
               variant="outlined"
+              startIcon={<RefreshIcon />}
+              onClick={fetchDeals}
+              disabled={loading}
+            >
+              Refresh
+            </Button>
+            <Button
+              variant="outlined"
               startIcon={<FilterIcon />}
               onClick={() => setShowFilters(!showFilters)}
             >
@@ -201,19 +241,39 @@ function DealList() {
         {/* Search Bar */}
         <Card sx={{ mb: 3 }}>
           <CardContent>
-            <TextField
-              fullWidth
-              placeholder="Search deals by customer name, stock number, salesperson, type, or bank..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-              }}
-            />
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  placeholder="Search deals by customer name, stock number, salesperson, type, or bank..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <DatePicker
+                  label="Start Date"
+                  value={filters.startDate}
+                  onChange={(date) => handleFilterChange('startDate', date)}
+                  renderInput={(params) => <TextField {...params} fullWidth />}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <DatePicker
+                  label="End Date"
+                  value={filters.endDate}
+                  onChange={(date) => handleFilterChange('endDate', date)}
+                  renderInput={(params) => <TextField {...params} fullWidth />}
+                />
+              </Grid>
+            </Grid>
           </CardContent>
         </Card>
 
@@ -222,23 +282,7 @@ function DealList() {
           <Card sx={{ mb: 3 }}>
             <CardContent>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6} md={3}>
-                  <DatePicker
-                    label="Start Date"
-                    value={filters.startDate}
-                    onChange={(date) => handleFilterChange('startDate', date)}
-                    renderInput={(params) => <TextField {...params} fullWidth />}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <DatePicker
-                    label="End Date"
-                    value={filters.endDate}
-                    onChange={(date) => handleFilterChange('endDate', date)}
-                    renderInput={(params) => <TextField {...params} fullWidth />}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid item xs={12} sm={6} md={4}>
                   <TextField
                     fullWidth
                     label="Salesperson"
@@ -246,7 +290,7 @@ function DealList() {
                     onChange={(e) => handleFilterChange('salesperson', e.target.value)}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid item xs={12} sm={6} md={4}>
                   <FormControl fullWidth>
                     <InputLabel>Vehicle Type</InputLabel>
                     <Select
@@ -261,7 +305,7 @@ function DealList() {
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid item xs={12} sm={6} md={4}>
                   <FormControl fullWidth>
                     <InputLabel>Bank</InputLabel>
                     <Select

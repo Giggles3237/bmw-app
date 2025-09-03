@@ -44,7 +44,7 @@ async function getFinanceManagerId(name) {
  */
 router.get('/', async (req, res) => {
   try {
-    const { month, year, limit } = req.query;
+    const { month, year, limit, type, start_date, end_date } = req.query;
     let sql =
       'SELECT d.*, s.name AS salesperson_name, f.name AS finance_manager_name\n' +
       'FROM deals d\n' +
@@ -52,14 +52,28 @@ router.get('/', async (req, res) => {
       'LEFT JOIN finance_managers f ON d.finance_manager_id = f.id';
     const params = [];
     const conditions = [];
-    if (month) {
-      conditions.push('d.month = ?');
-      params.push(month);
+    
+    if (start_date && end_date) {
+      // Custom date range
+      conditions.push('d.date >= ? AND d.date <= ?');
+      params.push(start_date, end_date);
+    } else {
+      // Month/year filtering
+      if (month) {
+        conditions.push('d.month = ?');
+        params.push(month);
+      }
+      if (year) {
+        conditions.push('d.year = ?');
+        params.push(year);
+      }
     }
-    if (year) {
-      conditions.push('d.year = ?');
-      params.push(year);
+    
+    if (type) {
+      conditions.push('d.type = ?');
+      params.push(type);
     }
+    
     if (conditions.length > 0) {
       sql += ' WHERE ' + conditions.join(' AND ');
     }

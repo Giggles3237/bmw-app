@@ -7,6 +7,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 // Import routers.  Each router encapsulates a section of the API.
+const authRouter = require('./routes/auth-simple');
 const dealsRouter = require('./routes/deals');
 const salespersonsRouter = require('./routes/salespersons');
 const reportsRouter = require('./routes/reports');
@@ -28,6 +29,7 @@ app.get('/', (req, res) => {
 
 // Mount our routers.  All API routes are prefixed with /api to
 // clearly separate them from any static assets you might serve.
+app.use('/api/auth', authRouter);
 app.use('/api/deals', dealsRouter);
 app.use('/api/salespersons', salespersonsRouter);
 app.use('/api/reports', reportsRouter);

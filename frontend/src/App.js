@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AppBar,
   Box,
@@ -18,7 +18,10 @@ import {
   Container,
   TextField,
   Button,
-  Chip
+  Chip,
+  Menu,
+  MenuItem,
+  Avatar
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -27,7 +30,10 @@ import {
   Person as PersonIcon,
   Assessment as AssessmentIcon,
   Settings as SettingsIcon,
-  AccountBalance as AccountBalanceIcon
+  AccountBalance as AccountBalanceIcon,
+  People as PeopleIcon,
+  Logout as LogoutIcon,
+  AccountCircle as AccountCircleIcon
 } from '@mui/icons-material';
 import DealList from './components/DealList';
 import DealForm from './components/DealForm';
@@ -35,6 +41,8 @@ import SalespersonReport from './components/SalespersonReport';
 import UnitReport from './components/UnitReport';
 import Admin from './components/Admin';
 import Funding from './components/Funding';
+import Login from './components/Login';
+import UserManagement from './components/UserManagement';
 
 const drawerWidth = 240;
 
@@ -76,12 +84,13 @@ const theme = createTheme({
 });
 
 const menuItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, view: 'deals' },
-  { text: 'Add Deal', icon: <AddIcon />, view: 'add' },
-  { text: 'Funding', icon: <AccountBalanceIcon />, view: 'funding' },
-  { text: 'Salesperson Report', icon: <PersonIcon />, view: 'salespersonReport' },
-  { text: 'Unit Report', icon: <AssessmentIcon />, view: 'unitReport' },
-  { text: 'Admin', icon: <SettingsIcon />, view: 'admin' },
+  { text: 'Dashboard', icon: <DashboardIcon />, view: 'deals', roles: ['admin', 'manager', 'salesperson', 'finance', 'viewer'] },
+  { text: 'Add Deal', icon: <AddIcon />, view: 'add', roles: ['admin', 'manager', 'salesperson'] },
+  { text: 'Funding', icon: <AccountBalanceIcon />, view: 'funding', roles: ['admin', 'manager', 'finance'] },
+  { text: 'Salesperson Report', icon: <PersonIcon />, view: 'salespersonReport', roles: ['admin', 'manager', 'salesperson'] },
+  { text: 'Unit Report', icon: <AssessmentIcon />, view: 'unitReport', roles: ['admin', 'manager', 'finance', 'viewer'] },
+  { text: 'Admin', icon: <SettingsIcon />, view: 'admin', roles: ['admin'] },
+  { text: 'User Management', icon: <PeopleIcon />, view: 'userManagement', roles: ['admin'] },
 ];
 
 function App() {
@@ -91,6 +100,21 @@ function App() {
     return localStorage.getItem('salespersonId') || '';
   });
   const [savedId, setSavedId] = useState(() => localStorage.getItem('salespersonId') || '');
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+  const [anchorEl, setAnchorEl] = useState(null);
+
+  useEffect(() => {
+    // Check if user is logged in on app start
+    const token = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+    
+    if (token && savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -106,6 +130,31 @@ function App() {
     setMobileOpen(false);
   };
 
+  const handleLogin = (userData) => {
+    setUser(userData);
+    setView('deals');
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    setAnchorEl(null);
+  };
+
+  const handleMenuClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  // Filter menu items based on user role
+  const filteredMenuItems = user ? menuItems.filter(item => 
+    item.roles.includes(user.role)
+  ) : [];
+
   const drawer = (
     <Box>
       <Toolbar>
@@ -114,7 +163,7 @@ function App() {
         </Typography>
       </Toolbar>
       <List>
-        {menuItems.map((item) => (
+        {filteredMenuItems.map((item) => (
           <ListItem key={item.text} disablePadding>
             <ListItemButton
               selected={view === item.view}
@@ -167,33 +216,35 @@ function App() {
               {menuItems.find(item => item.view === view)?.text || 'BMW Sales Management'}
             </Typography>
             
-            {/* Salesperson ID Section */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <TextField
-                size="small"
-                label="Salesperson ID"
-                type="number"
-                value={salespersonId}
-                onChange={(e) => setSalespersonId(e.target.value)}
-                sx={{ width: '120px' }}
-              />
-              <Button
-                variant="contained"
-                size="small"
-                onClick={handleSaveId}
-                sx={{ minWidth: 'auto' }}
-              >
-                Save
-              </Button>
-              {savedId && (
-                <Chip
-                  label={`ID: ${savedId}`}
-                  size="small"
-                  color="secondary"
-                  variant="outlined"
-                />
-              )}
-            </Box>
+            {/* User Menu */}
+            {user && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Typography variant="body2" sx={{ color: 'white' }}>
+                  {user.first_name} {user.last_name}
+                </Typography>
+                <IconButton
+                  color="inherit"
+                  onClick={handleMenuClick}
+                  sx={{ p: 0 }}
+                >
+                  <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
+                    <AccountCircleIcon />
+                  </Avatar>
+                </IconButton>
+                <Menu
+                  anchorEl={anchorEl}
+                  open={Boolean(anchorEl)}
+                  onClose={handleMenuClose}
+                >
+                  <MenuItem onClick={handleLogout}>
+                    <ListItemIcon>
+                      <LogoutIcon fontSize="small" />
+                    </ListItemIcon>
+                    Logout
+                  </MenuItem>
+                </Menu>
+              </Box>
+            )}
           </Toolbar>
         </AppBar>
 
@@ -240,14 +291,21 @@ function App() {
         >
           <Container maxWidth="xl">
             <Paper sx={{ p: 3, minHeight: 'calc(100vh - 120px)' }}>
-              {view === 'deals' && <DealList />}
-              {view === 'add' && <DealForm />}
-              {view === 'funding' && <Funding />}
-              {view === 'salespersonReport' && (
-                <SalespersonReport salespersonId={savedId} />
+              {!user ? (
+                <Login onLogin={handleLogin} />
+              ) : (
+                <>
+                  {view === 'deals' && <DealList />}
+                  {view === 'add' && <DealForm />}
+                  {view === 'funding' && <Funding />}
+                  {view === 'salespersonReport' && (
+                    <SalespersonReport salespersonId={savedId} />
+                  )}
+                  {view === 'unitReport' && <UnitReport />}
+                  {view === 'admin' && <Admin />}
+                  {view === 'userManagement' && <UserManagement />}
+                </>
               )}
-              {view === 'unitReport' && <UnitReport />}
-              {view === 'admin' && <Admin />}
             </Paper>
           </Container>
         </Box>
