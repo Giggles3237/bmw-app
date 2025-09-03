@@ -6,10 +6,19 @@ DROP TABLE IF EXISTS deals;
 DROP TABLE IF EXISTS salespersons;
 DROP TABLE IF EXISTS finance_managers;
 
--- Table of salespeople.  Each salesperson has a unique name.
+-- Table of salespeople.  Each salesperson has a unique name and employee number.
+-- Additional fields are included for future authentication system.
 CREATE TABLE salespersons (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(100) NOT NULL UNIQUE
+  name VARCHAR(100) NOT NULL,
+  employee_number VARCHAR(20) UNIQUE,
+  email VARCHAR(255) UNIQUE,
+  phone VARCHAR(20),
+  is_active BOOLEAN DEFAULT TRUE,
+  role ENUM('salesperson', 'manager', 'admin') DEFAULT 'salesperson',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY unique_name_employee (name, employee_number)
 );
 
 -- Table of finance managers.  Each finance manager also has a
@@ -83,3 +92,5 @@ CREATE TABLE deals (
 -- Create indexes to speed up reporting queries on month and year.
 CREATE INDEX idx_deals_month_year ON deals (month, year);
 CREATE INDEX idx_deals_salesperson ON deals (salesperson_id);
+CREATE INDEX idx_salespersons_employee_number ON salespersons (employee_number);
+CREATE INDEX idx_salespersons_email ON salespersons (email);

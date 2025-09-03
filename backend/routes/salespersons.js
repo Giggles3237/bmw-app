@@ -9,7 +9,11 @@ const pool = require('../db');
  */
 router.get('/', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT id, name FROM salespersons ORDER BY name ASC');
+    const [rows] = await pool.query(`
+      SELECT id, name, employee_number, email, phone, is_active, role, created_at, updated_at 
+      FROM salespersons 
+      ORDER BY name ASC
+    `);
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -19,21 +23,39 @@ router.get('/', async (req, res) => {
 /**
  * POST /api/salespersons
  *
- * Creates a new salesperson.  Expects a JSON body with a `name` field.
+ * Creates a new salesperson. Expects a JSON body with required fields.
  */
 router.post('/', async (req, res) => {
   try {
-    const { name } = req.body;
-    if (!name) {
-      return res.status(400).json({ error: 'Name is required' });
+    const { name, employee_number, email, phone, role = 'salesperson' } = req.body;
+    
+    if (!name || !employee_number) {
+      return res.status(400).json({ error: 'Name and Employee Number are required' });
     }
-    // Check if salesperson already exists
-    const [existing] = await pool.query('SELECT id FROM salespersons WHERE name = ?', [name]);
+
+    // Check if salesperson already exists by name or employee number
+    const [existing] = await pool.query(
+      'SELECT id FROM salespersons WHERE name = ? OR employee_number = ? OR email = ?', 
+      [name, employee_number, email]
+    );
+    
     if (existing.length > 0) {
-      return res.status(400).json({ error: 'Salesperson already exists' });
+      return res.status(400).json({ error: 'Salesperson with this name, employee number, or email already exists' });
     }
-    const [result] = await pool.query('INSERT INTO salespersons (name) VALUES (?)', [name]);
-    res.status(201).json({ id: result.insertId, name });
+
+    const [result] = await pool.query(
+      'INSERT INTO salespersons (name, employee_number, email, phone, role) VALUES (?, ?, ?, ?, ?)',
+      [name, employee_number, email, phone, role]
+    );
+    
+    res.status(201).json({ 
+      id: result.insertId, 
+      name, 
+      employee_number, 
+      email, 
+      phone, 
+      role 
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -47,7 +69,12 @@ router.post('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const [rows] = await pool.query('SELECT id, name FROM salespersons WHERE id = ?', [id]);
+    const [rows] = await pool.query(`
+      SELECT id, name, employee_number, email, phone, is_active, role, created_at, updated_at 
+      FROM salespersons 
+      WHERE id = ?
+    `, [id]);
+    
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Salesperson not found' });
     }
@@ -60,16 +87,32 @@ router.get('/:id', async (req, res) => {
 /**
  * PUT /api/salespersons/:id
  *
- * Updates a salesperson's name.
+ * Updates a salesperson's information.
  */
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name } = req.body;
-    if (!name) {
-      return res.status(400).json({ error: 'Name is required' });
+    const { name, employee_number, email, phone, is_active, role } = req.body;
+    
+    if (!name || !employee_number) {
+      return res.status(400).json({ error: 'Name and Employee Number are required' });
     }
-    await pool.query('UPDATE salespersons SET name = ? WHERE id = ?', [name, id]);
+
+    // Check if another salesperson has the same employee number or email
+    const [existing] = await pool.query(
+      'SELECT id FROM salespersons WHERE (employee_number = ? OR email = ?) AND id != ?', 
+      [employee_number, email, id]
+    );
+    
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'Employee number or email already exists for another salesperson' });
+    }
+
+    await pool.query(
+      'UPDATE salespersons SET name = ?, employee_number = ?, email = ?, phone = ?, is_active = ?, role = ? WHERE id = ?',
+      [name, employee_number, email, phone, is_active, role, id]
+    );
+    
     res.json({ message: 'Salesperson updated' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -79,8 +122,8 @@ router.put('/:id', async (req, res) => {
 /**
  * DELETE /api/salespersons/:id
  *
- * Deletes a salesperson.  Note: if a salesperson is referenced by a
- * deal the deletion will fail due to foreign key constraint.  You
+ * Deletes a salesperson. Note: if a salesperson is referenced by a
+ * deal the deletion will fail due to foreign key constraint. You
  * should reassign or remove deals before deleting a salesperson.
  */
 router.delete('/:id', async (req, res) => {
