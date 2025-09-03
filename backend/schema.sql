@@ -1,0 +1,85 @@
+-- Drop existing tables if they exist.  During development you can
+-- run this script repeatedly to reset the database.  In production
+-- environments you should use migrations rather than dropping
+-- tables.
+DROP TABLE IF EXISTS deals;
+DROP TABLE IF EXISTS salespersons;
+DROP TABLE IF EXISTS finance_managers;
+
+-- Table of salespeople.  Each salesperson has a unique name.
+CREATE TABLE salespersons (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL UNIQUE
+);
+
+-- Table of finance managers.  Each finance manager also has a
+-- unique name.  This table allows us to refer to finance
+-- managers via foreign keys instead of storing plain text on the
+-- deals table.
+CREATE TABLE finance_managers (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL UNIQUE
+);
+
+-- The central deals table.  Each row corresponds to a row in the
+-- Data Master sheet.  Many columns are optional and may be NULL
+-- if the value has not been provided yet.  Numeric values use
+-- DECIMAL with two decimal places to store currency and totals.
+CREATE TABLE deals (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  external_id INT,
+  date DATE,
+  month INT,
+  year INT,
+  bank VARCHAR(100),
+  funded_date DATE,
+  stock_number VARCHAR(50),
+  name VARCHAR(100),
+  salesperson_id INT,
+  split DECIMAL(5,2),
+  type VARCHAR(50),
+  used_car_source VARCHAR(100),
+  age INT,
+  fe_gross DECIMAL(12,2),
+  avp DECIMAL(12,2),
+  be_gross DECIMAL(12,2),
+  finance_manager_id INT,
+  reserve DECIMAL(12,2),
+  rewards DECIMAL(12,2),
+  vsc DECIMAL(12,2),
+  maintenance DECIMAL(12,2),
+  gap DECIMAL(12,2),
+  cilajet DECIMAL(12,2),
+  diamon DECIMAL(12,2),
+  key_product DECIMAL(12,2),
+  collision_product DECIMAL(12,2),
+  dent_product DECIMAL(12,2),
+  excess DECIMAL(12,2),
+  ppf DECIMAL(12,2),
+  wheel_and_tire DECIMAL(12,2),
+  product_count INT,
+  money DECIMAL(12,2),
+  titling DECIMAL(12,2),
+  mileage DECIMAL(12,2),
+  license_insurance DECIMAL(12,2),
+  fees DECIMAL(12,2),
+  clean BOOLEAN,
+  payoff_flag BOOLEAN,
+  payoff_sent DATE,
+  atc_flag BOOLEAN,
+  registration_sent DATE,
+  notes TEXT,
+  split2 DECIMAL(5,2),
+  CONSTRAINT fk_deals_salesperson FOREIGN KEY (salesperson_id)
+    REFERENCES salespersons(id)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE,
+  CONSTRAINT fk_deals_finance_manager FOREIGN KEY (finance_manager_id)
+    REFERENCES finance_managers(id)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE
+);
+
+-- Create indexes to speed up reporting queries on month and year.
+CREATE INDEX idx_deals_month_year ON deals (month, year);
+CREATE INDEX idx_deals_salesperson ON deals (salesperson_id);
