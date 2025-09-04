@@ -109,6 +109,7 @@ function App() {
   const [dealFormOpen, setDealFormOpen] = useState(false);
   const [dealFormMode, setDealFormMode] = useState('add'); // 'add' or 'edit'
   const [dealFormData, setDealFormData] = useState(null);
+  const [dealListRefreshKey, setDealListRefreshKey] = useState(0);
 
   useEffect(() => {
     // Check if user is logged in on app start
@@ -142,6 +143,14 @@ function App() {
   };
 
   const handleDealFormClose = () => {
+    setDealFormOpen(false);
+    setDealFormData(null);
+    setDealFormMode('add');
+  };
+
+  const handleDealFormSuccess = () => {
+    // Refresh the DealList component by incrementing the refresh key
+    setDealListRefreshKey(prev => prev + 1);
     setDealFormOpen(false);
     setDealFormData(null);
     setDealFormMode('add');
@@ -318,7 +327,7 @@ function App() {
                 <Login onLogin={handleLogin} />
               ) : (
                 <>
-                  {view === 'deals' && <DealList onNavigate={handleNavigation} />}
+                  {view === 'deals' && <DealList onNavigate={handleNavigation} key={dealListRefreshKey} />}
                   {view === 'funding' && <Funding />}
                   {view === 'salespersonReport' && (
                     <SalespersonReport salespersonId={savedId} />
@@ -336,6 +345,7 @@ function App() {
         <DealForm
           open={dealFormOpen}
           onClose={handleDealFormClose}
+          onSuccess={handleDealFormSuccess}
           editMode={dealFormMode === 'edit'}
           dealData={dealFormData}
         />

@@ -32,7 +32,7 @@ import axios from 'axios';
 import { format } from 'date-fns';
 import CalculateIcon from '@mui/icons-material/Calculate';
 
-function DealForm({ open, onClose, editMode = false, dealData = null }) {
+function DealForm({ open, onClose, onSuccess, editMode = false, dealData = null }) {
   const [form, setForm] = useState({
     // Basic Information
     deal_number: '',
@@ -309,7 +309,7 @@ function DealForm({ open, onClose, editMode = false, dealData = null }) {
       
       // Close modal after successful save (with a small delay to show success message)
       setTimeout(() => {
-        onClose();
+        onSuccess ? onSuccess() : onClose();
       }, 1500);
       
     } catch (err) {
