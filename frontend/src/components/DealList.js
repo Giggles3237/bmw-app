@@ -28,7 +28,12 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  Menu,
+  MenuItem as MenuItemComponent,
+  ListItemIcon,
+  ListItemText,
+  Divider
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -38,14 +43,22 @@ import {
   ExpandLess as ExpandLessIcon,
   Visibility as ViewIcon,
   Edit as EditIcon,
-  Refresh as RefreshIcon
+  Refresh as RefreshIcon,
+  CalendarToday as CalendarIcon,
+  DateRange as DateRangeIcon,
+  Today as TodayIcon,
+  Schedule as ScheduleIcon,
+  ViewWeek as ViewWeekIcon,
+  ViewModule as ViewModuleIcon,
+  TrendingUp as TrendingUpIcon,
+  Add as AddIcon
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import axios from 'axios';
 
-function DealList() {
+function DealList({ onNavigate }) {
   const [deals, setDeals] = useState([]);
   const [filteredDeals, setFilteredDeals] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -56,17 +69,25 @@ function DealList() {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState(() => {
     const today = new Date();
-    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    // Set default range to include available data (2018)
+    const startDate = new Date(2018, 0, 1); // January 1, 2018
+    const endDate = new Date(2025, 11, 31); // December 31, 2025
     return {
-      startDate: firstDayOfMonth,
-      endDate: lastDayOfMonth,
+      startDate: startDate,
+      endDate: endDate,
       salesperson: '',
       type: '',
       bank: '',
       status: ''
     };
   });
+
+  // Date picker states
+  const [dateAnchorEl, setDateAnchorEl] = useState(null);
+  const [selectedDateRange, setSelectedDateRange] = useState('yearToDate');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [showCustomPicker, setShowCustomPicker] = useState(false);
 
   // Deal detail dialog states
   const [selectedDeal, setSelectedDeal] = useState(null);
@@ -81,10 +102,9 @@ function DealList() {
       const currentMonth = today.getMonth() + 1; // getMonth() returns 0-11
       const currentYear = today.getFullYear();
       
+      // For now, let's fetch all deals without date filtering to see what's available
       const response = await axios.get('/api/deals', { 
         params: { 
-          month: currentMonth,
-          year: currentYear,
           limit: 1000 
         } 
       });
@@ -160,11 +180,12 @@ function DealList() {
 
   const clearFilters = () => {
     const today = new Date();
-    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    // Set default range to include available data (2018-2025)
+    const startDate = new Date(2018, 0, 1); // January 1, 2018
+    const endDate = new Date(2025, 11, 31); // December 31, 2025
     setFilters({
-      startDate: firstDayOfMonth,
-      endDate: lastDayOfMonth,
+      startDate: startDate,
+      endDate: endDate,
       salesperson: '',
       type: '',
       bank: '',
@@ -179,6 +200,91 @@ function DealList() {
       style: 'currency',
       currency: 'USD',
     }).format(amount);
+  };
+
+  const getDateRangeLabel = () => {
+    switch (selectedDateRange) {
+      case 'thisMonth': return 'This Month';
+      case 'lastMonth': return 'Previous Month';
+      case 'quarterToDate': return 'Quarter to Date';
+      case 'yearToDate': return 'Year to Date';
+      case 'lastQuarter': return 'Last Quarter';
+      case 'lastYear': return 'Last Year';
+      case 'custom': return 'Custom Range';
+      default: return 'Year to Date';
+    }
+  };
+
+  const getDateRangeIcon = (range) => {
+    switch (range) {
+      case 'thisMonth': return <TodayIcon />;
+      case 'lastMonth': return <CalendarIcon />;
+      case 'quarterToDate': return <ViewModuleIcon />;
+      case 'yearToDate': return <TrendingUpIcon />;
+      case 'lastQuarter': return <ViewWeekIcon />;
+      case 'lastYear': return <ScheduleIcon />;
+      case 'custom': return <DateRangeIcon />;
+      default: return <CalendarIcon />;
+    }
+  };
+
+  const handleDateRangeSelect = (range) => {
+    setSelectedDateRange(range);
+    setShowCustomPicker(false);
+    
+    const now = new Date();
+    let newStartDate = filters.startDate;
+    let newEndDate = filters.endDate;
+    
+    switch (range) {
+      case 'thisMonth':
+        newStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        newEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        break;
+      case 'lastMonth':
+        newStartDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        newEndDate = new Date(now.getFullYear(), now.getMonth(), 0);
+        break;
+      case 'quarterToDate':
+        newStartDate = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+        newEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        break;
+      case 'yearToDate':
+        newStartDate = new Date(now.getFullYear(), 0, 1);
+        newEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        break;
+      case 'lastQuarter':
+        const lastQuarterMonth = Math.floor((now.getMonth() - 3) / 3) * 3;
+        newStartDate = new Date(now.getFullYear(), lastQuarterMonth < 0 ? lastQuarterMonth + 12 : lastQuarterMonth, 1);
+        newEndDate = new Date(now.getFullYear(), lastQuarterMonth < 0 ? lastQuarterMonth + 15 : lastQuarterMonth + 3, 0);
+        break;
+      case 'lastYear':
+        newStartDate = new Date(now.getFullYear() - 1, 0, 1);
+        newEndDate = new Date(now.getFullYear() - 1, 11, 31);
+        break;
+      case 'custom':
+        setShowCustomPicker(true);
+        setDateAnchorEl(null);
+        return;
+    }
+    
+    setFilters(prev => ({
+      ...prev,
+      startDate: newStartDate,
+      endDate: newEndDate
+    }));
+    setDateAnchorEl(null);
+  };
+
+  const handleCustomDateSubmit = () => {
+    if (customStartDate && customEndDate) {
+      setSelectedDateRange('custom');
+      setFilters(prev => ({
+        ...prev,
+        startDate: new Date(customStartDate),
+        endDate: new Date(customEndDate)
+      }));
+    }
   };
 
   const formatDate = (dateString) => {
@@ -214,19 +320,17 @@ function DealList() {
           </Typography>
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button
-              variant="outlined"
-              startIcon={<RefreshIcon />}
-              onClick={fetchDeals}
-              disabled={loading}
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => onNavigate && onNavigate('add')}
+              sx={{
+                backgroundColor: '#1976d2',
+                '&:hover': {
+                  backgroundColor: '#1565c0',
+                }
+              }}
             >
-              Refresh
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<FilterIcon />}
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              Filters
+              Add Deal
             </Button>
             <Button
               variant="outlined"
@@ -241,8 +345,8 @@ function DealList() {
         {/* Search Bar */}
         <Card sx={{ mb: 3 }}>
           <CardContent>
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
+            <Grid container spacing={2} alignItems="center">
+              <Grid item xs={12} md={4}>
                 <TextField
                   fullWidth
                   placeholder="Search deals by customer name, stock number, salesperson, type, or bank..."
@@ -257,21 +361,125 @@ function DealList() {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <DatePicker
-                  label="Start Date"
-                  value={filters.startDate}
-                  onChange={(date) => handleFilterChange('startDate', date)}
-                  renderInput={(params) => <TextField {...params} fullWidth />}
-                />
+              
+              {/* Date Range Picker */}
+              <Grid item xs={12} md={3}>
+                <Button
+                  variant="outlined"
+                  startIcon={getDateRangeIcon(selectedDateRange)}
+                  onClick={(e) => setDateAnchorEl(e.currentTarget)}
+                  sx={{ 
+                    minWidth: 180,
+                    justifyContent: 'flex-start',
+                    borderColor: '#1976d2',
+                    color: '#1976d2',
+                    '&:hover': {
+                      borderColor: '#1565c0',
+                      backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                    }
+                  }}
+                >
+                  {getDateRangeLabel()}
+                </Button>
+                <Menu
+                  anchorEl={dateAnchorEl}
+                  open={Boolean(dateAnchorEl)}
+                  onClose={() => setDateAnchorEl(null)}
+                  PaperProps={{
+                    sx: {
+                      minWidth: 200,
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      borderRadius: 2
+                    }
+                  }}
+                >
+                  <MenuItemComponent onClick={() => handleDateRangeSelect('thisMonth')}>
+                    <ListItemIcon><TodayIcon /></ListItemIcon>
+                    <ListItemText primary="This Month" />
+                  </MenuItemComponent>
+                  <MenuItemComponent onClick={() => handleDateRangeSelect('lastMonth')}>
+                    <ListItemIcon><CalendarIcon /></ListItemIcon>
+                    <ListItemText primary="Previous Month" />
+                  </MenuItemComponent>
+                  <Divider />
+                  <MenuItemComponent onClick={() => handleDateRangeSelect('quarterToDate')}>
+                    <ListItemIcon><ViewModuleIcon /></ListItemIcon>
+                    <ListItemText primary="Quarter to Date" />
+                  </MenuItemComponent>
+                  <MenuItemComponent onClick={() => handleDateRangeSelect('lastQuarter')}>
+                    <ListItemIcon><ViewWeekIcon /></ListItemIcon>
+                    <ListItemText primary="Last Quarter" />
+                  </MenuItemComponent>
+                  <Divider />
+                  <MenuItemComponent onClick={() => handleDateRangeSelect('yearToDate')}>
+                    <ListItemIcon><TrendingUpIcon /></ListItemIcon>
+                    <ListItemText primary="Year to Date" />
+                  </MenuItemComponent>
+                  <MenuItemComponent onClick={() => handleDateRangeSelect('lastYear')}>
+                    <ListItemIcon><ScheduleIcon /></ListItemIcon>
+                    <ListItemText primary="Last Year" />
+                  </MenuItemComponent>
+                  <Divider />
+                  <MenuItemComponent onClick={() => handleDateRangeSelect('custom')}>
+                    <ListItemIcon><DateRangeIcon /></ListItemIcon>
+                    <ListItemText primary="Custom Range" />
+                  </MenuItemComponent>
+                </Menu>
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <DatePicker
-                  label="End Date"
-                  value={filters.endDate}
-                  onChange={(date) => handleFilterChange('endDate', date)}
-                  renderInput={(params) => <TextField {...params} fullWidth />}
-                />
+
+              {/* Custom Date Range Inputs */}
+              {showCustomPicker && (
+                <>
+                  <Grid item xs={12} sm={6} md={2}>
+                    <TextField
+                      label="Start Date"
+                      type="date"
+                      value={customStartDate}
+                      onChange={(e) => setCustomStartDate(e.target.value)}
+                      size="small"
+                      InputLabelProps={{ shrink: true }}
+                      fullWidth
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={2}>
+                    <TextField
+                      label="End Date"
+                      type="date"
+                      value={customEndDate}
+                      onChange={(e) => setCustomEndDate(e.target.value)}
+                      size="small"
+                      InputLabelProps={{ shrink: true }}
+                      fullWidth
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={1}>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={handleCustomDateSubmit}
+                      disabled={!customStartDate || !customEndDate}
+                      sx={{ 
+                        minWidth: 80,
+                        backgroundColor: '#2e7d32',
+                        '&:hover': { backgroundColor: '#1b5e20' }
+                      }}
+                    >
+                      Apply
+                    </Button>
+                  </Grid>
+                </>
+              )}
+
+              <Grid item xs={12} md={2}>
+                <Button
+                  variant="outlined"
+                  startIcon={<RefreshIcon />}
+                  onClick={fetchDeals}
+                  disabled={loading}
+                  fullWidth
+                >
+                  Refresh
+                </Button>
               </Grid>
             </Grid>
           </CardContent>
@@ -468,8 +676,20 @@ function DealList() {
                   <Typography variant="body1">{selectedDeal.bank || 'N/A'}</Typography>
                 </Grid>
                 <Grid item xs={12} sm={6} md={4}>
-                  <Typography variant="subtitle2" color="text.secondary">Funded Date</Typography>
-                  <Typography variant="body1">{formatDate(selectedDeal.funded_date) || 'Not Funded'}</Typography>
+                  <Typography variant="subtitle2" color="text.secondary">Funded Status</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Chip 
+                      label={selectedDeal.funded ? 'Funded' : 'Not Funded'} 
+                      color={selectedDeal.funded ? 'success' : 'default'}
+                      variant="outlined"
+                      size="small"
+                    />
+                    {selectedDeal.funded_timestamp && (
+                      <Typography variant="caption" color="text.secondary">
+                        ({new Date(selectedDeal.funded_timestamp).toLocaleDateString()})
+                      </Typography>
+                    )}
+                  </Box>
                 </Grid>
 
                 {/* Financial Information */}
@@ -572,7 +792,10 @@ function DealList() {
               variant="contained" 
               startIcon={<EditIcon />}
               onClick={() => {
-                // TODO: Navigate to edit form or open edit dialog
+                // Navigate to edit form with the selected deal data
+                if (onNavigate && selectedDeal) {
+                  onNavigate('add', { editMode: true, dealData: selectedDeal });
+                }
                 handleCloseDialog();
               }}
             >

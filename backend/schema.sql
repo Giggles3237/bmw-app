@@ -100,6 +100,8 @@ CREATE TABLE deals (
   registration_sent DATE,
   notes TEXT,
   split2 DECIMAL(5,2),
+  funded BOOLEAN DEFAULT FALSE,
+  funded_timestamp TIMESTAMP NULL,
   CONSTRAINT fk_deals_salesperson FOREIGN KEY (salesperson_id)
     REFERENCES salespersons(id)
     ON DELETE SET NULL

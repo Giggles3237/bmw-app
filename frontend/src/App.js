@@ -85,7 +85,6 @@ const theme = createTheme({
 
 const menuItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, view: 'deals', roles: ['admin', 'manager', 'salesperson', 'finance', 'viewer'] },
-  { text: 'Add Deal', icon: <AddIcon />, view: 'add', roles: ['admin', 'manager', 'salesperson'] },
   { text: 'Funding', icon: <AccountBalanceIcon />, view: 'funding', roles: ['admin', 'manager', 'finance'] },
   { text: 'Salesperson Report', icon: <PersonIcon />, view: 'salespersonReport', roles: ['admin', 'manager', 'salesperson'] },
   { text: 'Unit Report', icon: <AssessmentIcon />, view: 'unitReport', roles: ['admin', 'manager', 'finance', 'viewer'] },
@@ -105,6 +104,11 @@ function App() {
     return savedUser ? JSON.parse(savedUser) : null;
   });
   const [anchorEl, setAnchorEl] = useState(null);
+  
+  // Deal form modal state
+  const [dealFormOpen, setDealFormOpen] = useState(false);
+  const [dealFormMode, setDealFormMode] = useState('add'); // 'add' or 'edit'
+  const [dealFormData, setDealFormData] = useState(null);
 
   useEffect(() => {
     // Check if user is logged in on app start
@@ -125,9 +129,22 @@ function App() {
     setSavedId(salespersonId);
   };
 
-  const handleNavigation = (newView) => {
+  const handleNavigation = (newView, options = {}) => {
     setView(newView);
     setMobileOpen(false);
+    
+    // Handle deal form modal
+    if (newView === 'add' || options.editMode) {
+      setDealFormMode(options.editMode ? 'edit' : 'add');
+      setDealFormData(options.dealData || null);
+      setDealFormOpen(true);
+    }
+  };
+
+  const handleDealFormClose = () => {
+    setDealFormOpen(false);
+    setDealFormData(null);
+    setDealFormMode('add');
   };
 
   const handleLogin = (userData) => {
@@ -212,8 +229,14 @@ function App() {
             >
               <MenuIcon />
             </IconButton>
+            
             <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-              {menuItems.find(item => item.view === view)?.text || 'BMW Sales Management'}
+              {view === 'deals' && 'Deal Dashboard'}
+              {view === 'funding' && 'Funding'}
+              {view === 'salespersonReport' && 'Salesperson Report'}
+              {view === 'unitReport' && 'Unit Report'}
+              {view === 'admin' && 'Admin'}
+              {view === 'userManagement' && 'User Management'}
             </Typography>
             
             {/* User Menu */}
@@ -295,8 +318,7 @@ function App() {
                 <Login onLogin={handleLogin} />
               ) : (
                 <>
-                  {view === 'deals' && <DealList />}
-                  {view === 'add' && <DealForm />}
+                  {view === 'deals' && <DealList onNavigate={handleNavigation} />}
                   {view === 'funding' && <Funding />}
                   {view === 'salespersonReport' && (
                     <SalespersonReport salespersonId={savedId} />
@@ -309,6 +331,14 @@ function App() {
             </Paper>
           </Container>
         </Box>
+
+        {/* Deal Form Modal */}
+        <DealForm
+          open={dealFormOpen}
+          onClose={handleDealFormClose}
+          editMode={dealFormMode === 'edit'}
+          dealData={dealFormData}
+        />
       </Box>
     </ThemeProvider>
   );
