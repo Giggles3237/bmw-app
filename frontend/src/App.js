@@ -84,7 +84,7 @@ const theme = createTheme({
 });
 
 const menuItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, view: 'deals', roles: ['admin', 'manager', 'salesperson', 'finance', 'viewer'] },
+  { text: 'Deals', icon: <DashboardIcon />, view: 'deals', roles: ['admin', 'manager', 'salesperson', 'finance', 'viewer'] },
   { text: 'Funding', icon: <AccountBalanceIcon />, view: 'funding', roles: ['admin', 'manager', 'finance'] },
   { text: 'Salesperson Report', icon: <PersonIcon />, view: 'salespersonReport', roles: ['admin', 'manager', 'salesperson'] },
   { text: 'Unit Report', icon: <AssessmentIcon />, view: 'unitReport', roles: ['admin', 'manager', 'finance', 'viewer'] },
@@ -240,7 +240,7 @@ function App() {
             </IconButton>
             
             <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-              {view === 'deals' && 'Deal Dashboard'}
+              {view === 'deals' && 'Deals'}
               {view === 'funding' && 'Funding'}
               {view === 'salespersonReport' && 'Salesperson Report'}
               {view === 'unitReport' && 'Unit Report'}

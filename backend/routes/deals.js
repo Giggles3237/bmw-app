@@ -171,15 +171,11 @@ router.post('/', async (req, res) => {
       mileage: data.mileage,
       license_insurance: data.license_insurance,
       fees: data.fees,
-      clean: data.clean,
-      payoff_flag: data.payoff_flag,
-      payoff_sent: data.payoff_sent,
-      atc_flag: data.atc_flag,
-      registration_sent: data.registration_sent,
       notes: data.notes,
       split2: data.split2,
       funded: data.funded,
-      funded_timestamp: data.funded_timestamp
+      funded_timestamp: data.funded_timestamp,
+      registration_complete_date: data.registration_complete_date
     };
     // Extract only defined columns.  Undefined values are ignored so
     // that they remain NULL in the database.
@@ -252,15 +248,11 @@ router.put('/:id', async (req, res) => {
       'mileage',
       'license_insurance',
       'fees',
-      'clean',
-      'payoff_flag',
-      'payoff_sent',
-      'atc_flag',
-      'registration_sent',
       'notes',
       'split2',
       'funded',
-      'funded_timestamp'
+      'funded_timestamp',
+      'registration_complete_date'
     ];
     allowedFields.forEach((field) => {
       if (data[field] !== undefined) {

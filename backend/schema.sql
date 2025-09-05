@@ -93,15 +93,11 @@ CREATE TABLE deals (
   mileage DECIMAL(12,2),
   license_insurance DECIMAL(12,2),
   fees DECIMAL(12,2),
-  clean BOOLEAN,
-  payoff_flag BOOLEAN,
-  payoff_sent DATE,
-  atc_flag BOOLEAN,
-  registration_sent DATE,
   notes TEXT,
   split2 DECIMAL(5,2),
   funded BOOLEAN DEFAULT FALSE,
   funded_timestamp TIMESTAMP NULL,
+  registration_complete_date DATE,
   CONSTRAINT fk_deals_salesperson FOREIGN KEY (salesperson_id)
     REFERENCES salespersons(id)
     ON DELETE SET NULL

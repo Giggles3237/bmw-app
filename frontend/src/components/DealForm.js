@@ -23,7 +23,8 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  Chip
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -71,11 +72,7 @@ function DealForm({ open, onClose, onSuccess, editMode = false, dealData = null 
     product_count: '',
     
     // Status Flags
-    clean: false,
-    payoff_flag: false,
-    payoff_sent: '',
-    atc_flag: false,
-    registration_sent: '',
+    registration_complete_date: '',
     
     // Notes
     notes: ''
@@ -83,6 +80,7 @@ function DealForm({ open, onClose, onSuccess, editMode = false, dealData = null 
 
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [salespersons, setSalespersons] = useState([]);
   const [avpCalculationMode, setAvpCalculationMode] = useState('direct'); // 'direct' or 'calculated'
        const [productCalculationModes, setProductCalculationModes] = useState({
     vsc: 'direct',
@@ -154,6 +152,20 @@ function DealForm({ open, onClose, onSuccess, editMode = false, dealData = null 
       setLoading(false);
     }
   }, [open, editMode, dealData]);
+
+  // Fetch salespersons when component mounts
+  useEffect(() => {
+    const fetchSalespersons = async () => {
+      try {
+        const response = await axios.get('/api/salespersons');
+        setSalespersons(response.data);
+      } catch (error) {
+        console.error('Error fetching salespersons:', error);
+      }
+    };
+    
+    fetchSalespersons();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -545,9 +557,6 @@ function DealForm({ open, onClose, onSuccess, editMode = false, dealData = null 
                   </Grid>
                   <Grid item xs={12} sm={6} md={3}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      <Typography variant="subtitle2" color="text.secondary">
-                        Funded Status
-                      </Typography>
                       <Button
                         variant={form.funded ? "contained" : "outlined"}
                         color={form.funded ? "success" : "primary"}
@@ -571,14 +580,57 @@ function DealForm({ open, onClose, onSuccess, editMode = false, dealData = null 
                   <Grid item xs={12} sm={6} md={3}>
                     {renderField('stock_number', 'Stock Number')}
                   </Grid>
-                  <Grid item xs={12} sm={6} md={6}>
+                  <Grid item xs={12} sm={6} md={3}>
                     {renderField('name', 'Customer Name', 'text', true)}
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <Button
+                        variant={form.registration_complete_date ? "contained" : "outlined"}
+                        color={form.registration_complete_date ? "success" : "primary"}
+                        onClick={() => {
+                          const today = new Date();
+                          setForm(prev => ({
+                            ...prev,
+                            registration_complete_date: form.registration_complete_date ? '' : today.toISOString().split('T')[0]
+                          }));
+                        }}
+                        sx={{
+                          minHeight: '56px',
+                          fontWeight: 'bold',
+                          textTransform: 'none',
+                          fontSize: '1rem'
+                        }}
+                      >
+                        {form.registration_complete_date ? 'Registered' : 'Not Registered'}
+                      </Button>
+                      {form.registration_complete_date && (
+                        <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
+                          Registered: {format(new Date(form.registration_complete_date), 'MM/dd/yyyy')}
+                        </Typography>
+                      )}
+                    </Box>
                   </Grid>
                   <Grid item xs={12} sm={6} md={6}>
                     {renderField('type', 'Vehicle Type', 'select', false, ['New BMW', 'New MINI', 'CPO BMW', 'CPO MINI', 'Used BMW', 'Used MINI'])}
                   </Grid>
                   <Grid item xs={12} sm={6} md={6}>
-                    {renderField('salesperson', 'Salesperson')}
+                    <FormControl fullWidth>
+                      <InputLabel>Salesperson</InputLabel>
+                      <Select
+                        name="salesperson"
+                        value={form.salesperson}
+                        label="Salesperson"
+                        onChange={handleChange}
+                      >
+                        <MenuItem value="">Select Salesperson</MenuItem>
+                        {salespersons.map(salesperson => (
+                          <MenuItem key={salesperson.id} value={salesperson.name}>
+                            {salesperson.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
                   </Grid>
                   <Grid item xs={12} sm={6} md={6}>
                     {renderField('finance_manager', 'Finance Manager')}
@@ -731,20 +783,39 @@ function DealForm({ open, onClose, onSuccess, editMode = false, dealData = null 
               <CardHeader title="Status Flags" />
               <CardContent>
                 <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6} md={3}>
-                    {renderSwitch('clean', 'Clean')}
+                  <Grid item xs={12} sm={6} md={6}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="body1" sx={{ minWidth: 120 }}>
+                        Funded:
+                      </Typography>
+                      <Chip 
+                        label={form.funded ? 'Funded' : 'Not Funded'} 
+                        color={form.funded ? 'success' : 'default'}
+                        variant="outlined"
+                      />
+                      {form.funded_date && (
+                        <Typography variant="caption" color="text.secondary">
+                          ({format(new Date(form.funded_date), 'MM/dd/yyyy')})
+                        </Typography>
+                      )}
+                    </Box>
                   </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    {renderSwitch('payoff_flag', 'Payoff Flag')}
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    {renderSwitch('atc_flag', 'ATC Flag')}
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    {renderField('payoff_sent', 'Payoff Sent', 'date')}
-                  </Grid>
-                  <Grid item xs={12} sm={6} md={3}>
-                    {renderField('registration_sent', 'Registration Sent', 'date')}
+                  <Grid item xs={12} sm={6} md={6}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="body1" sx={{ minWidth: 120 }}>
+                        Registration Complete:
+                      </Typography>
+                      <Chip 
+                        label={form.registration_complete_date ? 'Complete' : 'Pending'} 
+                        color={form.registration_complete_date ? 'success' : 'default'}
+                        variant="outlined"
+                      />
+                      {form.registration_complete_date && (
+                        <Typography variant="caption" color="text.secondary">
+                          ({format(new Date(form.registration_complete_date), 'MM/dd/yyyy')})
+                        </Typography>
+                      )}
+                    </Box>
                   </Grid>
                 </Grid>
               </CardContent>

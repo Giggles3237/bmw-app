@@ -51,7 +51,11 @@ import {
   ViewWeek as ViewWeekIcon,
   ViewModule as ViewModuleIcon,
   TrendingUp as TrendingUpIcon,
-  Add as AddIcon
+  Add as AddIcon,
+  FirstPage as FirstPageIcon,
+  LastPage as LastPageIcon,
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -69,9 +73,9 @@ function DealList({ onNavigate }) {
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState(() => {
     const today = new Date();
-    // Set default range to include available data (2018)
-    const startDate = new Date(2018, 0, 1); // January 1, 2018
-    const endDate = new Date(2025, 11, 31); // December 31, 2025
+    // Set default range to current month
+    const startDate = new Date(today.getFullYear(), today.getMonth(), 1); // First day of current month
+    const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0); // Last day of current month
     return {
       startDate: startDate,
       endDate: endDate,
@@ -84,7 +88,7 @@ function DealList({ onNavigate }) {
 
   // Date picker states
   const [dateAnchorEl, setDateAnchorEl] = useState(null);
-  const [selectedDateRange, setSelectedDateRange] = useState('yearToDate');
+  const [selectedDateRange, setSelectedDateRange] = useState('thisMonth');
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [showCustomPicker, setShowCustomPicker] = useState(false);
@@ -92,6 +96,44 @@ function DealList({ onNavigate }) {
   // Deal detail dialog states
   const [selectedDeal, setSelectedDeal] = useState(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(20);
+
+  // Pagination calculations
+  const totalRows = filteredDeals.length;
+  const totalPages = Math.ceil(totalRows / rowsPerPage);
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = startIndex + rowsPerPage;
+  const currentPageData = filteredDeals.slice(startIndex, endIndex);
+
+  // Pagination handlers
+  const handleChangePage = (event, newPage) => {
+    setCurrentPage(newPage + 1);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    const newRowsPerPage = event.target.value === 'all' ? totalRows : parseInt(event.target.value, 10);
+    setRowsPerPage(newRowsPerPage);
+    setCurrentPage(1);
+  };
+
+  const handleFirstPage = () => {
+    setCurrentPage(1);
+  };
+
+  const handleLastPage = () => {
+    setCurrentPage(totalPages);
+  };
+
+  const handlePreviousPage = () => {
+    setCurrentPage(prev => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  };
 
   const fetchDeals = async () => {
     setLoading(true);
@@ -102,12 +144,9 @@ function DealList({ onNavigate }) {
       const currentMonth = today.getMonth() + 1; // getMonth() returns 0-11
       const currentYear = today.getFullYear();
       
-      // For now, let's fetch all deals without date filtering to see what's available
-      const response = await axios.get('/api/deals', { 
-        params: { 
-          limit: 1000 
-        } 
-      });
+      // Fetch all deals without any server-side filtering
+      const response = await axios.get('/api/deals');
+      console.log('Total deals fetched:', response.data.length);
       setDeals(response.data);
       setFilteredDeals(response.data);
     } catch (err) {
@@ -121,6 +160,11 @@ function DealList({ onNavigate }) {
   useEffect(() => {
     fetchDeals();
   }, []);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filteredDeals]);
 
   // Apply filters and search
   useEffect(() => {
@@ -138,23 +182,19 @@ function DealList({ onNavigate }) {
       );
     }
 
-    // Apply date filters - convert Date objects to month/year for backend filtering
+    // Apply date filters - use actual date field like Funding component
     if (filters.startDate) {
-      const startMonth = filters.startDate.getMonth() + 1; // getMonth() returns 0-11
-      const startYear = filters.startDate.getFullYear();
       filtered = filtered.filter(deal => {
-        if (!deal.month || !deal.year) return false;
-        return (deal.year > startYear) || 
-               (deal.year === startYear && deal.month >= startMonth);
+        if (!deal.date) return false;
+        const dealDate = new Date(deal.date);
+        return dealDate >= filters.startDate;
       });
     }
     if (filters.endDate) {
-      const endMonth = filters.endDate.getMonth() + 1;
-      const endYear = filters.endDate.getFullYear();
       filtered = filtered.filter(deal => {
-        if (!deal.month || !deal.year) return false;
-        return (deal.year < endYear) || 
-               (deal.year === endYear && deal.month <= endMonth);
+        if (!deal.date) return false;
+        const dealDate = new Date(deal.date);
+        return dealDate <= filters.endDate;
       });
     }
     if (filters.salesperson) {
@@ -171,6 +211,8 @@ function DealList({ onNavigate }) {
       );
     }
 
+    console.log('Filtered deals count:', filtered.length);
+    console.log('Current month filter:', filters.startDate?.getMonth() + 1, filters.endDate?.getMonth() + 1);
     setFilteredDeals(filtered);
   }, [deals, searchTerm, filters]);
 
@@ -316,7 +358,7 @@ function DealList({ onNavigate }) {
       <Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h4" component="h1">
-            Deal Dashboard
+            Deals
           </Typography>
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button
@@ -570,13 +612,15 @@ function DealList({ onNavigate }) {
                   <TableCell>Salesperson</TableCell>
                   <TableCell>Type</TableCell>
                   <TableCell>Bank</TableCell>
+                  <TableCell>Funded</TableCell>
+                  <TableCell>Registration</TableCell>
                   <TableCell>FE Gross</TableCell>
                   <TableCell>BE Gross</TableCell>
                   <TableCell>Total Gross</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {filteredDeals.map((deal) => (
+                {currentPageData.map((deal) => (
                   <TableRow 
                     key={deal.id} 
                     hover 
@@ -603,6 +647,32 @@ function DealList({ onNavigate }) {
                       />
                     </TableCell>
                     <TableCell>{deal.bank || '-'}</TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={deal.funded ? 'Funded' : 'Pending'} 
+                        color={deal.funded ? 'success' : 'default'}
+                        size="small"
+                        variant="outlined"
+                      />
+                      {deal.funded_date && (
+                        <Typography variant="caption" display="block" color="text.secondary">
+                          {formatDate(deal.funded_date)}
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={deal.registration_complete_date ? 'Complete' : 'Pending'} 
+                        color={deal.registration_complete_date ? 'success' : 'default'}
+                        size="small"
+                        variant="outlined"
+                      />
+                      {deal.registration_complete_date && (
+                        <Typography variant="caption" display="block" color="text.secondary">
+                          {formatDate(deal.registration_complete_date)}
+                        </Typography>
+                      )}
+                    </TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>
                       {formatCurrency(deal.fe_gross)}
                     </TableCell>
@@ -617,6 +687,70 @@ function DealList({ onNavigate }) {
               </TableBody>
             </Table>
           </TableContainer>
+        )}
+
+        {/* Pagination Controls */}
+        {!loading && filteredDeals.length > 0 && (
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2, p: 2 }}>
+            {/* Rows per page selector */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                Rows per page:
+              </Typography>
+              <FormControl size="small" sx={{ minWidth: 80 }}>
+                <Select
+                  value={rowsPerPage === totalRows ? 'all' : rowsPerPage}
+                  onChange={handleChangeRowsPerPage}
+                  displayEmpty
+                >
+                  <MenuItem value={20}>20</MenuItem>
+                  <MenuItem value={50}>50</MenuItem>
+                  <MenuItem value={100}>100</MenuItem>
+                  <MenuItem value="all">All</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+
+            {/* Pagination info */}
+            <Typography variant="body2" color="text.secondary">
+              {startIndex + 1}-{Math.min(endIndex, totalRows)} of {totalRows} results
+            </Typography>
+
+            {/* Pagination controls */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <IconButton
+                onClick={handleFirstPage}
+                disabled={currentPage === 1}
+                size="small"
+              >
+                <FirstPageIcon />
+              </IconButton>
+              <IconButton
+                onClick={handlePreviousPage}
+                disabled={currentPage === 1}
+                size="small"
+              >
+                <ChevronLeftIcon />
+              </IconButton>
+              <Typography variant="body2" sx={{ mx: 2 }}>
+                Page {currentPage} of {totalPages}
+              </Typography>
+              <IconButton
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+                size="small"
+              >
+                <ChevronRightIcon />
+              </IconButton>
+              <IconButton
+                onClick={handleLastPage}
+                disabled={currentPage === totalPages}
+                size="small"
+              >
+                <LastPageIcon />
+              </IconButton>
+            </Box>
+          </Box>
         )}
 
         {!loading && filteredDeals.length === 0 && (
@@ -687,6 +821,22 @@ function DealList({ onNavigate }) {
                     {selectedDeal.funded_timestamp && (
                       <Typography variant="caption" color="text.secondary">
                         ({new Date(selectedDeal.funded_timestamp).toLocaleDateString()})
+                      </Typography>
+                    )}
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Typography variant="subtitle2" color="text.secondary">Registration Status</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Chip 
+                      label={selectedDeal.registration_complete_date ? 'Complete' : 'Pending'} 
+                      color={selectedDeal.registration_complete_date ? 'success' : 'default'}
+                      variant="outlined"
+                      size="small"
+                    />
+                    {selectedDeal.registration_complete_date && (
+                      <Typography variant="caption" color="text.secondary">
+                        ({formatDate(selectedDeal.registration_complete_date)})
                       </Typography>
                     )}
                   </Box>

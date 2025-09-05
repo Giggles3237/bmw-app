@@ -33,14 +33,36 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Name and Employee Number are required' });
     }
 
-    // Check if salesperson already exists by name or employee number
-    const [existing] = await pool.query(
-      'SELECT id FROM salespersons WHERE name = ? OR employee_number = ? OR email = ?', 
-      [name, employee_number, email]
+    // Check if salesperson already exists by name
+    const [existingName] = await pool.query(
+      'SELECT id FROM salespersons WHERE name = ?', 
+      [name]
     );
     
-    if (existing.length > 0) {
-      return res.status(400).json({ error: 'Salesperson with this name, employee number, or email already exists' });
+    if (existingName.length > 0) {
+      return res.status(400).json({ error: 'Salesperson with this name already exists' });
+    }
+
+    // Check if employee number already exists
+    const [existingEmployeeNumber] = await pool.query(
+      'SELECT id FROM salespersons WHERE employee_number = ?', 
+      [employee_number]
+    );
+    
+    if (existingEmployeeNumber.length > 0) {
+      return res.status(400).json({ error: 'Employee number already exists' });
+    }
+
+    // Check if email already exists (only if email is provided)
+    if (email && email.trim() !== '') {
+      const [existingEmail] = await pool.query(
+        'SELECT id FROM salespersons WHERE email = ?', 
+        [email]
+      );
+      
+      if (existingEmail.length > 0) {
+        return res.status(400).json({ error: 'Email already exists' });
+      }
     }
 
     const [result] = await pool.query(
@@ -98,14 +120,26 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Name and Employee Number are required' });
     }
 
-    // Check if another salesperson has the same employee number or email
-    const [existing] = await pool.query(
-      'SELECT id FROM salespersons WHERE (employee_number = ? OR email = ?) AND id != ?', 
-      [employee_number, email, id]
+    // Check if another salesperson has the same employee number
+    const [existingEmployeeNumber] = await pool.query(
+      'SELECT id FROM salespersons WHERE employee_number = ? AND id != ?', 
+      [employee_number, id]
     );
     
-    if (existing.length > 0) {
-      return res.status(400).json({ error: 'Employee number or email already exists for another salesperson' });
+    if (existingEmployeeNumber.length > 0) {
+      return res.status(400).json({ error: 'Employee number already exists for another salesperson' });
+    }
+
+    // Check if another salesperson has the same email (only if email is provided)
+    if (email && email.trim() !== '') {
+      const [existingEmail] = await pool.query(
+        'SELECT id FROM salespersons WHERE email = ? AND id != ?', 
+        [email, id]
+      );
+      
+      if (existingEmail.length > 0) {
+        return res.status(400).json({ error: 'Email already exists for another salesperson' });
+      }
     }
 
     await pool.query(
