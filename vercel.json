@@ -9,14 +9,14 @@
       }
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/(.*)",
-      "destination": "/backend/index.js"
+      "src": "/api/(.*)",
+      "dest": "/backend/index.js"
     },
     {
-      "source": "/(.*)",
-      "destination": "/frontend/build/index.html"
+      "src": "/(.*)",
+      "dest": "/frontend/build/$1"
     }
   ],
   "installCommand": "cd frontend && npm install",
