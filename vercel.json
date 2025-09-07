@@ -8,7 +8,5 @@
         "distDir": "build"
       }
     }
-  ],
-  "installCommand": "npm install --prefix frontend",
-  "buildCommand": "npm run build --prefix frontend"
+  ]
 }
