@@ -81,6 +81,7 @@ function DealForm({ open, onClose, onSuccess, editMode = false, dealData = null 
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [salespersons, setSalespersons] = useState([]);
+  const [salespersonsLoading, setSalespersonsLoading] = useState(true);
   const [avpCalculationMode, setAvpCalculationMode] = useState('direct'); // 'direct' or 'calculated'
        const [productCalculationModes, setProductCalculationModes] = useState({
     vsc: 'direct',
@@ -157,10 +158,16 @@ function DealForm({ open, onClose, onSuccess, editMode = false, dealData = null 
   useEffect(() => {
     const fetchSalespersons = async () => {
       try {
+        setSalespersonsLoading(true);
         const response = await axios.get('/api/salespersons');
-        setSalespersons(response.data);
+        // Ensure we always set an array, even if the API returns something else
+        setSalespersons(Array.isArray(response.data) ? response.data : []);
       } catch (error) {
         console.error('Error fetching salespersons:', error);
+        // Set empty array on error to prevent map errors
+        setSalespersons([]);
+      } finally {
+        setSalespersonsLoading(false);
       }
     };
     
@@ -622,13 +629,24 @@ function DealForm({ open, onClose, onSuccess, editMode = false, dealData = null 
                         value={form.salesperson}
                         label="Salesperson"
                         onChange={handleChange}
+                        disabled={salespersonsLoading}
                       >
-                        <MenuItem value="">Select Salesperson</MenuItem>
-                        {salespersons.map(salesperson => (
-                          <MenuItem key={salesperson.id} value={salesperson.name}>
-                            {salesperson.name}
-                          </MenuItem>
-                        ))}
+                        <MenuItem value="">
+                          {salespersonsLoading ? 'Loading...' : 'Select Salesperson'}
+                        </MenuItem>
+                        {salespersons && salespersons.length > 0 ? (
+                          salespersons.map(salesperson => (
+                            <MenuItem key={salesperson.id} value={salesperson.name}>
+                              {salesperson.name}
+                            </MenuItem>
+                          ))
+                        ) : (
+                          !salespersonsLoading && (
+                            <MenuItem value="" disabled>
+                              No salespersons available
+                            </MenuItem>
+                          )
+                        )}
                       </Select>
                     </FormControl>
                   </Grid>
