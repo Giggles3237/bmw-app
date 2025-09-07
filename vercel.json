@@ -19,7 +19,7 @@
       "dest": "/backend/index.js"
     },
     {
-      "src": "/((?!api/).*)",
+      "src": "/(.*)",
       "dest": "/frontend/$1"
     }
   ]
