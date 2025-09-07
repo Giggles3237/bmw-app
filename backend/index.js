@@ -27,6 +27,18 @@ app.get('/', (req, res) => {
   res.send('BMW Sales Management API');
 });
 
+// Health check route to test database connection
+app.get('/health', async (req, res) => {
+  try {
+    const db = require('./db');
+    await db.query('SELECT 1');
+    res.json({ status: 'healthy', database: 'connected' });
+  } catch (error) {
+    console.error('Database health check failed:', error);
+    res.status(500).json({ status: 'unhealthy', database: 'disconnected', error: error.message });
+  }
+});
+
 // Mount our routers.  All API routes are prefixed with /api to
 // clearly separate them from any static assets you might serve.
 app.use('/api/auth', authRouter);

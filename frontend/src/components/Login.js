@@ -47,11 +47,22 @@ const Login = ({ onLogin }) => {
         body: JSON.stringify(formData),
       });
 
-      const data = await response.json();
-
+      // Check if response is ok before trying to parse JSON
       if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
+        // Try to get error message from response
+        let errorMessage = 'Login failed';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (parseError) {
+          // If we can't parse the error response, use status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
+
+      // Parse JSON only if response is ok
+      const data = await response.json();
 
       // Store token and user data
       localStorage.setItem('token', data.token);
@@ -59,7 +70,12 @@ const Login = ({ onLogin }) => {
       
       onLogin(data.user);
     } catch (err) {
-      setError(err.message);
+      console.error('Login error:', err);
+      if (err.name === 'SyntaxError' && err.message.includes('JSON')) {
+        setError('Server returned invalid response. Please check if the backend server is running.');
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }

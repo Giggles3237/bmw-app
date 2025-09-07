@@ -17,7 +17,26 @@ const pool = mysql.createPool({
   queueLimit: 0,
   ssl: {
     rejectUnauthorized: false
-  }
+  },
+  acquireTimeout: 60000,
+  timeout: 60000,
+  reconnect: true
 });
+
+// Test the connection on startup
+pool.getConnection()
+  .then(connection => {
+    console.log('Database connected successfully');
+    connection.release();
+  })
+  .catch(err => {
+    console.error('Database connection failed:', err.message);
+    console.error('Connection config:', {
+      host: process.env.MYSQL_HOST || 'localhost',
+      user: process.env.MYSQL_USER || 'root',
+      database: process.env.MYSQL_DATABASE || 'bmw',
+      ssl: process.env.MYSQL_SSL || 'false'
+    });
+  });
 
 module.exports = pool;

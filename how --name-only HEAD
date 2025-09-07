@@ -1,5 +1,0 @@
-[33mdd99e9f[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Simplify vercel.json - remove custom routing, let Vercel handle static serving
-[33m8335300[m Add comprehensive routing for React app and static assets
-[33m396d12f[m Fix routing - change rewrites to routes for proper file serving
-[33ma5e3ad2[m Revert to full path approach - remove Root Directory dependency
-[33m792b88a[m Fix vercel.json to work with Root Directory setting
