@@ -49,6 +49,13 @@ app.use('/api/reports', reportsRouter);
 // Start listening for incoming requests.  The port can be
 // configured via the PORT environment variable.
 const port = process.env.PORT || 3001;
-app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
-});
+
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(port, () => {
+    console.log(`Server listening on port ${port}`);
+  });
+}
+
+// Export the app for Vercel serverless functions
+module.exports = app;
