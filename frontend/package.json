@@ -15,7 +15,9 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "react-scripts": "^5.0.1"
+    "react-scripts": "^5.0.1",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@jridgewell/sourcemap-codec": "^1.4.15"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -35,5 +37,21 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "resolutions": {
+    "rollup-plugin-terser": "@rollup/plugin-terser",
+    "sourcemap-codec": "@jridgewell/sourcemap-codec",
+    "stable": "npm:@stable/stable@^0.1.8",
+    "q": "npm:q@^1.5.1",
+    "workbox-google-analytics": "npm:workbox-google-analytics@^6.6.0",
+    "workbox-cacheable-response": "npm:workbox-cacheable-response@^6.6.0",
+    "w3c-hr-time": "npm:w3c-hr-time@^1.0.2",
+    "domexception": "npm:domexception@^2.0.1",
+    "abab": "npm:abab@^2.0.6",
+    "inflight": "npm:inflight@^1.0.6",
+    "glob": "npm:glob@^9.0.0",
+    "rimraf": "npm:rimraf@^4.0.0",
+    "@humanwhocodes/object-schema": "npm:@eslint/object-schema@^0.0.0",
+    "@humanwhocodes/config-array": "npm:@eslint/config-array@^0.0.0"
   }
 }
