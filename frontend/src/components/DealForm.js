@@ -30,6 +30,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import axios from 'axios';
+import API_CONFIG from '../config/api';
 import { format } from 'date-fns';
 import CalculateIcon from '@mui/icons-material/Calculate';
 
@@ -159,7 +160,7 @@ function DealForm({ open, onClose, onSuccess, editMode = false, dealData = null 
     const fetchSalespersons = async () => {
       try {
         setSalespersonsLoading(true);
-        const response = await axios.get('/api/salespersons');
+        const response = await axios.get(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SALESPERSONS}`);
         // Ensure we always set an array, even if the API returns something else
         setSalespersons(Array.isArray(response.data) ? response.data : []);
       } catch (error) {
@@ -294,11 +295,11 @@ function DealForm({ open, onClose, onSuccess, editMode = false, dealData = null 
       
       if (editMode && dealData) {
         // Update existing deal
-        await axios.put(`/api/deals/${dealData.id}`, payload);
+        await axios.put(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.DEALS}/${dealData.id}`, payload);
         setMessage({ type: 'success', text: 'Deal updated successfully!' });
       } else {
         // Create new deal
-        await axios.post('/api/deals', payload);
+        await axios.post(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.DEALS}`, payload);
         setMessage({ type: 'success', text: 'Deal saved successfully!' });
         
         // Clear form for new deal

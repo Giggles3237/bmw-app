@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_CONFIG from '../config/api';
 
 /**
  * Displays aggregated totals per salesperson.  The user can choose a
@@ -25,7 +26,7 @@ function SalespersonReport({ salespersonId }) {
       if (month) params.month = month;
       if (year) params.year = year;
       if (salespersonId) params.salesperson_id = salespersonId;
-      const response = await axios.get('/api/reports/salesperson', { params });
+      const response = await axios.get(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.REPORTS}/salesperson`, { params });
       setData(response.data);
     } catch (err) {
       setError('Failed to fetch report');

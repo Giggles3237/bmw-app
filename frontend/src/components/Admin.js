@@ -37,6 +37,7 @@ import {
   Person as PersonIcon
 } from '@mui/icons-material';
 import axios from 'axios';
+import API_CONFIG from '../config/api';
 
 function Admin() {
   const [salespeople, setSalespeople] = useState([]);
@@ -60,7 +61,7 @@ function Admin() {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get('/api/salespersons');
+      const response = await axios.get(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SALESPERSONS}`);
       setSalespeople(response.data);
     } catch (err) {
       setError('Failed to load salespeople');
@@ -119,10 +120,10 @@ function Admin() {
 
     try {
       if (editingId) {
-        await axios.put(`/api/salespersons/${editingId}`, form);
+        await axios.put(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SALESPERSONS}/${editingId}`, form);
         setSuccess('Salesperson updated successfully!');
       } else {
-        await axios.post('/api/salespersons', form);
+        await axios.post(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SALESPERSONS}`, form);
         setSuccess('Salesperson added successfully!');
       }
       
@@ -145,7 +146,7 @@ function Admin() {
     setSuccess(null);
 
     try {
-      await axios.delete(`/api/salespersons/${id}`);
+      await axios.delete(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SALESPERSONS}/${id}`);
       setSuccess('Salesperson deleted successfully!');
       fetchSalespeople();
     } catch (err) {

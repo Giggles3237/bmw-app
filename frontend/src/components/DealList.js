@@ -61,6 +61,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import axios from 'axios';
+import API_CONFIG from '../config/api';
 
 function DealList({ onNavigate }) {
   const [deals, setDeals] = useState([]);
@@ -72,13 +73,10 @@ function DealList({ onNavigate }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState(() => {
-    const today = new Date();
-    // Set default range to current month
-    const startDate = new Date(today.getFullYear(), today.getMonth(), 1); // First day of current month
-    const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0); // Last day of current month
+    // Set default range to show all deals (no date filtering)
     return {
-      startDate: startDate,
-      endDate: endDate,
+      startDate: null,
+      endDate: null,
       salesperson: '',
       type: '',
       bank: '',
@@ -145,7 +143,7 @@ function DealList({ onNavigate }) {
       const currentYear = today.getFullYear();
       
       // Fetch all deals without any server-side filtering
-      const response = await axios.get('/api/deals');
+      const response = await axios.get(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.DEALS}`);
       console.log('Total deals fetched:', response.data.length);
       setDeals(response.data);
       setFilteredDeals(response.data);
@@ -182,19 +180,23 @@ function DealList({ onNavigate }) {
       );
     }
 
-    // Apply date filters - use actual date field like Funding component
+    // Apply date filters - debug the date filtering
     if (filters.startDate) {
       filtered = filtered.filter(deal => {
         if (!deal.date) return false;
         const dealDate = new Date(deal.date);
-        return dealDate >= filters.startDate;
+        const isAfterStart = dealDate >= filters.startDate;
+        console.log(`Deal ${deal.id}: date=${deal.date}, dealDate=${dealDate.toISOString()}, startDate=${filters.startDate.toISOString()}, isAfterStart=${isAfterStart}`);
+        return isAfterStart;
       });
     }
     if (filters.endDate) {
       filtered = filtered.filter(deal => {
         if (!deal.date) return false;
         const dealDate = new Date(deal.date);
-        return dealDate <= filters.endDate;
+        const isBeforeEnd = dealDate <= filters.endDate;
+        console.log(`Deal ${deal.id}: date=${deal.date}, dealDate=${dealDate.toISOString()}, endDate=${filters.endDate.toISOString()}, isBeforeEnd=${isBeforeEnd}`);
+        return isBeforeEnd;
       });
     }
     if (filters.salesperson) {

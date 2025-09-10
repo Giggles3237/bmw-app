@@ -26,6 +26,7 @@ import {
   Chip
 } from '@mui/material';
 import { Edit as EditIcon, Add as AddIcon } from '@mui/icons-material';
+import API_CONFIG from '../config/api';
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -53,7 +54,7 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/auth/users', {
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH}/users`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -74,7 +75,7 @@ const UserManagement = () => {
 
   const fetchSalespersons = async () => {
     try {
-      const response = await fetch('/api/salespersons');
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SALESPERSONS}`);
       if (response.ok) {
         const data = await response.json();
         setSalespersons(data.salespersons);
@@ -129,8 +130,8 @@ const UserManagement = () => {
     try {
       const token = localStorage.getItem('token');
       const url = editingUser 
-        ? `/api/auth/users/${editingUser.id}`
-        : '/api/auth/register';
+        ? `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH}/users/${editingUser.id}`
+        : `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH}/register`;
       
       const method = editingUser ? 'PUT' : 'POST';
       const body = editingUser ? formData : { ...formData, password: 'temp123' };

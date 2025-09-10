@@ -12,6 +12,7 @@ import {
   IconButton
 } from '@mui/material';
 import { Lock, Visibility, VisibilityOff } from '@mui/icons-material';
+import API_CONFIG from '../config/api';
 
 const Login = ({ onLogin }) => {
   const [formData, setFormData] = useState({
@@ -39,7 +40,7 @@ const Login = ({ onLogin }) => {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

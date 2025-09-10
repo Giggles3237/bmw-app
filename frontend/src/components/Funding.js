@@ -57,6 +57,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import axios from 'axios';
+import API_CONFIG from '../config/api';
 
 function Funding() {
   const [unfundedDeals, setUnfundedDeals] = useState([]);
@@ -102,7 +103,7 @@ function Funding() {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get('/api/deals');
+      const response = await axios.get(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.DEALS}`);
       // Filter for deals without funded_date
       const unfunded = response.data.filter(deal => !deal.funded_date);
       setUnfundedDeals(unfunded);
@@ -351,7 +352,7 @@ function Funding() {
         funded_date: form.funded_date ? form.funded_date.toISOString().split('T')[0] : null
       };
 
-      await axios.put(`/api/deals/${selectedDeal.id}`, updateData);
+      await axios.put(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.DEALS}/${selectedDeal.id}`, updateData);
       setSuccess('Deal funded successfully!');
       
       fetchUnfundedDeals(); // Refresh the list

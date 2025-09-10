@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_CONFIG from '../config/api';
 import {
   Box,
   Typography,
@@ -89,7 +90,7 @@ function UnitReport() {
         if (year) params.year = year;
       }
       
-      const response = await axios.get('/api/reports/unit', { params });
+      const response = await axios.get(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.REPORTS}/unit`, { params });
       setData(response.data);
     } catch (err) {
       setError('Failed to fetch report');
@@ -242,7 +243,7 @@ function UnitReport() {
           
           params.type = vehicleType;
           
-          const response = await axios.get('/api/deals', { params });
+          const response = await axios.get(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.DEALS}`, { params });
           setDealDetails(prev => ({ ...prev, [vehicleType]: response.data }));
         } catch (err) {
           console.error('Failed to fetch deal details:', err);
