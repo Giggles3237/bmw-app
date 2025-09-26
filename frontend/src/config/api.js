@@ -1,7 +1,9 @@
 // API Configuration
 const API_CONFIG = {
-  // Always use the deployed backend URL
-  BASE_URL: 'https://bmw-backend-g3lg5epgu-chris-projects-92828244.vercel.app',
+  // Automatically detect environment and use appropriate backend URL
+  BASE_URL: process.env.NODE_ENV === 'development' 
+    ? 'http://localhost:3001'  // Local development
+    : 'https://bmw-backend-g3lg5epgu-chris-projects-92828244.vercel.app', // Production
   
   // API endpoints
   ENDPOINTS: {

@@ -39,6 +39,7 @@ import DealList from './components/DealList';
 import DealForm from './components/DealForm';
 import SalespersonReport from './components/SalespersonReport';
 import UnitReport from './components/UnitReport';
+import PayrollSheet from './components/PayrollSheet';
 import Admin from './components/Admin';
 import Funding from './components/Funding';
 import Login from './components/Login';
@@ -87,6 +88,7 @@ const menuItems = [
   { text: 'Deals', icon: <DashboardIcon />, view: 'deals', roles: ['admin', 'manager', 'salesperson', 'finance', 'viewer'] },
   { text: 'Funding', icon: <AccountBalanceIcon />, view: 'funding', roles: ['admin', 'manager', 'finance'] },
   { text: 'Salesperson Report', icon: <PersonIcon />, view: 'salespersonReport', roles: ['admin', 'manager', 'salesperson'] },
+  { text: 'Payroll Sheet', icon: <AccountBalanceIcon />, view: 'payrollSheet', roles: ['admin', 'manager', 'finance'] },
   { text: 'Unit Report', icon: <AssessmentIcon />, view: 'unitReport', roles: ['admin', 'manager', 'finance', 'viewer'] },
   { text: 'Admin', icon: <SettingsIcon />, view: 'admin', roles: ['admin'] },
   { text: 'User Management', icon: <PeopleIcon />, view: 'userManagement', roles: ['admin'] },
@@ -243,6 +245,7 @@ function App() {
               {view === 'deals' && 'Deals'}
               {view === 'funding' && 'Funding'}
               {view === 'salespersonReport' && 'Salesperson Report'}
+              {view === 'payrollSheet' && 'Payroll Sheet'}
               {view === 'unitReport' && 'Unit Report'}
               {view === 'admin' && 'Admin'}
               {view === 'userManagement' && 'User Management'}
@@ -332,6 +335,7 @@ function App() {
                   {view === 'salespersonReport' && (
                     <SalespersonReport salespersonId={savedId} />
                   )}
+                  {view === 'payrollSheet' && <PayrollSheet />}
                   {view === 'unitReport' && <UnitReport />}
                   {view === 'admin' && <Admin />}
                   {view === 'userManagement' && <UserManagement />}

@@ -1,0 +1,574 @@
+/* Payroll Modal Styles - PDF Layout Matching */
+.payroll-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.payroll-modal-content {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  max-width: 95%;
+  max-height: 95%;
+  overflow: auto;
+  position: relative;
+  font-family: 'Arial', 'Helvetica', sans-serif;
+}
+
+.payroll-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 2px solid #e9ecef;
+  background-color: #f8f9fa;
+  border-radius: 8px 8px 0 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.payroll-modal-header h2 {
+  margin: 0;
+  color: #343a40;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.payroll-modal-controls {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-print, .btn-close {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-print {
+  background-color: #007bff;
+  color: white;
+}
+
+.btn-print:hover {
+  background-color: #0056b3;
+}
+
+.btn-close {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-close:hover {
+  background-color: #5a6268;
+}
+
+/* Payroll Sheet - PDF Style Layout */
+.payroll-sheet {
+  padding: 30px;
+  background: white;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #000;
+  max-width: 8.5in;
+  margin: 0 auto;
+}
+
+/* Header Section - PDF Style */
+.payroll-header {
+  display: grid;
+  grid-template-columns: 80px 1fr 200px;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #000;
+}
+
+.company-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-placeholder {
+  width: 60px;
+  height: 60px;
+  background-color: #0066cc;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  border-radius: 50%;
+}
+
+.company-info {
+  text-align: center;
+}
+
+.company-info h1 {
+  margin: 0 0 5px 0;
+  font-size: 24px;
+  font-weight: bold;
+  color: #000;
+  font-family: 'Times New Roman', Times, serif;
+}
+
+.company-subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+  font-style: italic;
+}
+
+.payroll-info {
+  text-align: right;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+  font-size: 11px;
+}
+
+.info-row .label {
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.info-row .value {
+  text-align: right;
+}
+
+/* Section Titles */
+.section-title {
+  font-size: 14px;
+  font-weight: bold;
+  margin: 20px 0 10px 0;
+  padding: 5px 0;
+  border-bottom: 1px solid #ccc;
+  color: #000;
+}
+
+.subsection-title {
+  font-size: 12px;
+  font-weight: bold;
+  color: #003366;
+  margin: 15px 0 10px 0;
+  padding-left: 10px;
+  border-left: 3px solid #003366;
+}
+
+/* Pay Plan Section - PDF Style */
+.pay-plan-section {
+  margin-bottom: 25px;
+}
+
+.pay-plan-grid {
+  display: grid;
+  gap: 3px;
+  font-size: 11px;
+}
+
+.plan-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  padding: 3px 0;
+  border-bottom: 1px dotted #ccc;
+}
+
+.plan-item:first-child {
+  grid-template-columns: 1fr;
+  font-weight: bold;
+  border-bottom: 1px solid #000;
+  margin-bottom: 5px;
+  padding-bottom: 5px;
+}
+
+.plan-item:first-child .plan-desc {
+  font-weight: normal;
+  font-style: italic;
+  font-size: 10px;
+  color: #666;
+}
+
+.plan-label {
+  font-weight: bold;
+}
+
+.plan-value {
+  text-align: right;
+  font-weight: bold;
+}
+
+/* PDF Table Styles */
+.pdf-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 15px 0;
+  font-size: 11px;
+}
+
+.pdf-table th {
+  background-color: #f5f5f5;
+  border: 1px solid #000;
+  padding: 8px;
+  text-align: left;
+  font-weight: bold;
+  font-size: 11px;
+}
+
+.pdf-table td {
+  border: 1px solid #000;
+  padding: 6px 8px;
+  font-size: 11px;
+}
+
+.pdf-table .number-cell {
+  text-align: right;
+  font-weight: normal;
+}
+
+.pdf-table .total-row {
+  background-color: #f8f9fa;
+  font-weight: bold;
+}
+
+.pdf-table .total-row td {
+  border-top: 2px solid #000;
+  font-weight: bold;
+}
+
+/* Commission Section */
+.commission-section {
+  margin-bottom: 25px;
+}
+
+.commission-breakdown {
+  display: grid;
+  gap: 3px;
+  font-size: 11px;
+}
+
+.commission-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  padding: 3px 0;
+  border-bottom: 1px dotted #ccc;
+}
+
+.commission-item .amount {
+  text-align: right;
+  font-weight: bold;
+}
+
+/* Bonuses Section */
+.bonuses-section {
+  margin-bottom: 25px;
+}
+
+.bonuses-grid {
+  display: grid;
+  gap: 5px;
+  font-size: 11px;
+}
+
+.bonus-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  padding: 5px 0;
+  border-bottom: 1px dotted #ccc;
+}
+
+.bonus-label {
+  font-weight: bold;
+}
+
+.bonus-value {
+  text-align: right;
+  font-weight: bold;
+}
+
+/* Pay Summary Section */
+.pay-summary-section {
+  margin-bottom: 25px;
+}
+
+.pay-summary {
+  border: 2px solid #000;
+  padding: 15px;
+  background-color: #f9f9f9;
+}
+
+.pay-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  padding: 5px 0;
+  border-bottom: 1px dotted #999;
+  font-size: 12px;
+}
+
+.pay-item:last-child {
+  border-bottom: none;
+}
+
+.pay-item.total {
+  border-top: 2px solid #000;
+  margin-top: 10px;
+  padding-top: 10px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.pay-item .amount {
+  text-align: right;
+  font-weight: bold;
+}
+
+/* Performance Section */
+.performance-section {
+  margin-bottom: 25px;
+}
+
+.performance-metrics {
+  display: grid;
+  gap: 5px;
+  font-size: 11px;
+}
+
+.metric {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  padding: 3px 0;
+  border-bottom: 1px dotted #ccc;
+}
+
+/* Footer */
+.payroll-footer {
+  margin-top: 30px;
+  padding-top: 15px;
+  border-top: 1px solid #ccc;
+  text-align: center;
+  font-size: 10px;
+  color: #666;
+  font-style: italic;
+}
+
+.payroll-footer p {
+  margin: 3px 0;
+}
+
+/* Print Styles */
+@media print {
+  .payroll-modal-backdrop {
+    position: static;
+    background: none;
+    padding: 0;
+  }
+  
+  .payroll-modal-content {
+    box-shadow: none;
+    border-radius: 0;
+    max-width: none;
+    max-height: none;
+    overflow: visible;
+  }
+  
+  .payroll-modal-header {
+    display: none;
+  }
+  
+  .payroll-sheet {
+    padding: 0;
+    font-size: 10px;
+  }
+  
+  .section-title {
+    font-size: 12px;
+  }
+  
+  .company-info h1 {
+    font-size: 20px;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .payroll-modal-content {
+    max-width: 98%;
+    max-height: 98%;
+  }
+  
+  .payroll-sheet {
+    padding: 15px;
+    font-size: 11px;
+  }
+  
+  .payroll-header {
+    grid-template-columns: 1fr;
+    text-align: center;
+    gap: 10px;
+  }
+  
+  .payroll-info {
+    text-align: center;
+  }
+  
+  .info-row {
+    justify-content: center;
+  }
+  
+  .plan-item,
+  .commission-item,
+  .bonus-item,
+  .pay-item,
+  .metric {
+    grid-template-columns: 1fr;
+    text-align: center;
+    gap: 5px;
+  }
+}
+
+/* Pay Plan Section Styles */
+.pay-plan-section {
+  margin: 20px 0;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.pay-plan-grid {
+  display: grid;
+  gap: 20px;
+}
+
+.plan-category {
+  background-color: white;
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.plan-category h4 {
+  margin: 0 0 10px 0;
+  color: #2c3e50;
+  font-size: 16px;
+  font-weight: bold;
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 5px;
+}
+
+.plan-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.plan-item:last-child {
+  border-bottom: none;
+}
+
+.plan-label {
+  font-weight: 500;
+  color: #495057;
+  flex: 1;
+}
+
+.plan-value {
+  font-weight: bold;
+  color: #28a745;
+  text-align: right;
+  min-width: 100px;
+}
+
+/* Product Breakdown Section */
+.product-breakdown-section {
+  margin: 20px 0;
+}
+
+.product-breakdown-section .pdf-table {
+  font-size: 14px;
+}
+
+.product-breakdown-section .pdf-table th {
+  background-color: #007bff;
+  color: white;
+  font-weight: bold;
+  text-align: center;
+  padding: 12px 8px;
+}
+
+.product-breakdown-section .pdf-table td {
+  padding: 10px 8px;
+  text-align: center;
+  border: 1px solid #dee2e6;
+}
+
+.product-breakdown-section .pdf-table td:first-child {
+  text-align: left;
+  font-weight: 500;
+}
+
+.product-breakdown-section .number-cell {
+  font-weight: bold;
+  color: #28a745;
+}
+
+.product-breakdown-section .total-row {
+  background-color: #f8f9fa;
+  font-weight: bold;
+}
+
+.product-breakdown-section .total-row td {
+  background-color: #e9ecef;
+  border-top: 2px solid #007bff;
+}
+
+/* Responsive adjustments for pay plan */
+@media (max-width: 768px) {
+  .pay-plan-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .plan-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  
+  .plan-value {
+    text-align: left;
+    min-width: auto;
+  }
+  
+  .product-breakdown-section .pdf-table {
+    font-size: 12px;
+  }
+  
+  .product-breakdown-section .pdf-table th,
+  .product-breakdown-section .pdf-table td {
+    padding: 8px 4px;
+  }
+}
