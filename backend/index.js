@@ -11,6 +11,7 @@ const authRouter = require('./routes/auth-simple');
 const dealsRouter = require('./routes/deals');
 const salespersonsRouter = require('./routes/salespersons');
 const reportsRouter = require('./routes/reports');
+const spiffsRouter = require('./routes/spiffs');
 
 const app = express();
 
@@ -45,6 +46,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/deals', dealsRouter);
 app.use('/api/salespersons', salespersonsRouter);
 app.use('/api/reports', reportsRouter);
+app.use('/api/spiffs', spiffsRouter);
 
 // Start listening for incoming requests.  The port can be
 // configured via the PORT environment variable.

@@ -10,7 +10,8 @@ const API_CONFIG = {
     AUTH: '/api/auth',
     DEALS: '/api/deals',
     SALESPERSONS: '/api/salespersons',
-    REPORTS: '/api/reports'
+    REPORTS: '/api/reports',
+    SPIFFS: '/api/spiffs'
   }
 };
 

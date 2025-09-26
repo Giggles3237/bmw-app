@@ -33,7 +33,8 @@ import {
   AccountBalance as AccountBalanceIcon,
   People as PeopleIcon,
   Logout as LogoutIcon,
-  AccountCircle as AccountCircleIcon
+  AccountCircle as AccountCircleIcon,
+  AttachMoney as MoneyIcon
 } from '@mui/icons-material';
 import DealList from './components/DealList';
 import DealForm from './components/DealForm';
@@ -44,6 +45,7 @@ import Admin from './components/Admin';
 import Funding from './components/Funding';
 import Login from './components/Login';
 import UserManagement from './components/UserManagement';
+import SpiffManagement from './components/SpiffManagement';
 
 const drawerWidth = 240;
 
@@ -90,6 +92,7 @@ const menuItems = [
   { text: 'Salesperson Report', icon: <PersonIcon />, view: 'salespersonReport', roles: ['admin', 'manager', 'salesperson'] },
   { text: 'Payroll Sheet', icon: <AccountBalanceIcon />, view: 'payrollSheet', roles: ['admin', 'manager', 'finance'] },
   { text: 'Unit Report', icon: <AssessmentIcon />, view: 'unitReport', roles: ['admin', 'manager', 'finance', 'viewer'] },
+  { text: 'Spiff Management', icon: <MoneyIcon />, view: 'spiffManagement', roles: ['admin', 'manager'] },
   { text: 'Admin', icon: <SettingsIcon />, view: 'admin', roles: ['admin'] },
   { text: 'User Management', icon: <PeopleIcon />, view: 'userManagement', roles: ['admin'] },
 ];
@@ -247,6 +250,7 @@ function App() {
               {view === 'salespersonReport' && 'Salesperson Report'}
               {view === 'payrollSheet' && 'Payroll Sheet'}
               {view === 'unitReport' && 'Unit Report'}
+              {view === 'spiffManagement' && 'Spiff Management'}
               {view === 'admin' && 'Admin'}
               {view === 'userManagement' && 'User Management'}
             </Typography>
@@ -337,6 +341,7 @@ function App() {
                   )}
                   {view === 'payrollSheet' && <PayrollSheet />}
                   {view === 'unitReport' && <UnitReport />}
+                  {view === 'spiffManagement' && <SpiffManagement />}
                   {view === 'admin' && <Admin />}
                   {view === 'userManagement' && <UserManagement />}
                 </>
