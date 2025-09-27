@@ -7,6 +7,9 @@ dotenv.config();
 
 // Create a connection pool.  The pool will manage multiple
 // simultaneous connections and automatically recycle idle ones.
+const useSSL = (process.env.MYSQL_SSL || '').toLowerCase();
+const shouldUseSSL = useSSL === 'true' || useSSL === '1' || useSSL === 'yes';
+
 const pool = mysql.createPool({
   host: process.env.MYSQL_HOST || 'localhost',
   user: process.env.MYSQL_USER || 'root',
@@ -15,9 +18,7 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  ssl: {
-    rejectUnauthorized: false
-  },
+  ...(shouldUseSSL ? { ssl: { rejectUnauthorized: false } } : {}),
   acquireTimeout: 60000,
   timeout: 60000,
   reconnect: true
@@ -35,7 +36,7 @@ pool.getConnection()
       host: process.env.MYSQL_HOST || 'localhost',
       user: process.env.MYSQL_USER || 'root',
       database: process.env.MYSQL_DATABASE || 'bmw',
-      ssl: process.env.MYSQL_SSL || 'false'
+      ssl: shouldUseSSL
     });
   });
 
