@@ -40,13 +40,26 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Mount our routers.  All API routes are prefixed with /api to
-// clearly separate them from any static assets you might serve.
-app.use('/api/auth', authRouter);
-app.use('/api/deals', dealsRouter);
-app.use('/api/salespersons', salespersonsRouter);
-app.use('/api/reports', reportsRouter);
-app.use('/api/spiffs', spiffsRouter);
+// Mount our routers.  In most environments the frontend talks to the
+// backend using a `/api` prefix (e.g. `/api/reports`).  However when
+// the application is deployed to Vercel the platform rewrites the
+// incoming `/api/*` requests before invoking the serverless function.
+// Inside the function the request path no longer includes the `/api`
+// prefix which caused 404s because our routers were only mounted at
+// `/api/...`.  To support both local development and the serverless
+// deployment we mount the routers at both the `/api` prefixed paths
+// and their root-level equivalents.
+const mountRoutes = (prefix = '') => {
+  const base = prefix ? `${prefix}` : '';
+  app.use(`${base}/auth`, authRouter);
+  app.use(`${base}/deals`, dealsRouter);
+  app.use(`${base}/salespersons`, salespersonsRouter);
+  app.use(`${base}/reports`, reportsRouter);
+  app.use(`${base}/spiffs`, spiffsRouter);
+};
+
+mountRoutes('/api');
+mountRoutes('');
 
 // Start listening for incoming requests.  The port can be
 // configured via the PORT environment variable.
