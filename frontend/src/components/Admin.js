@@ -128,17 +128,26 @@ function Admin() {
     setSuccess(null);
 
     try {
+      console.log('Form data being submitted:', form);
+      console.log('Editing ID:', editingId);
+      
       if (editingId) {
-        await axios.put(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SALESPERSONS}/${editingId}`, form);
+        console.log('Updating salesperson with ID:', editingId);
+        const response = await axios.put(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SALESPERSONS}/${editingId}`, form);
+        console.log('Update response:', response.data);
         setSuccess('Salesperson updated successfully!');
       } else {
-        await axios.post(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SALESPERSONS}`, form);
+        console.log('Creating new salesperson');
+        const response = await axios.post(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SALESPERSONS}`, form);
+        console.log('Create response:', response.data);
         setSuccess('Salesperson added successfully!');
       }
       
       fetchSalespeople();
       handleCloseDialog();
     } catch (err) {
+      console.error('Error saving salesperson:', err);
+      console.error('Error response:', err.response?.data);
       setError(err.response?.data?.error || 'Failed to save salesperson');
     } finally {
       setLoading(false);

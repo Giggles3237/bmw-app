@@ -119,6 +119,11 @@ router.put('/:id', async (req, res) => {
     const { id } = req.params;
     const { name, employee_number, email, phone, is_active, role, payplan, demo_eligible } = req.body;
     
+    console.log('PUT /salespersons/:id - Request received');
+    console.log('ID:', id);
+    console.log('Request body:', req.body);
+    console.log('Extracted fields:', { name, employee_number, email, phone, is_active, role, payplan, demo_eligible });
+    
     if (!name || !employee_number) {
       return res.status(400).json({ error: 'Name and Employee Number are required' });
     }
@@ -148,10 +153,15 @@ router.put('/:id', async (req, res) => {
     // Convert empty email to null to avoid UNIQUE constraint issues
     const emailValue = (email && email.trim() !== '') ? email : null;
     
-    await pool.query(
+    console.log('About to execute UPDATE query with params:', [name, employee_number, emailValue, phone, is_active, role, payplan, demo_eligible, id]);
+    
+    const result = await pool.query(
       'UPDATE salespersons SET name = ?, employee_number = ?, email = ?, phone = ?, is_active = ?, role = ?, payplan = ?, demo_eligible = ? WHERE id = ?',
       [name, employee_number, emailValue, phone, is_active, role, payplan, demo_eligible, id]
     );
+    
+    console.log('UPDATE query result:', result);
+    console.log('Rows affected:', result[0].affectedRows);
     
     res.json({ message: 'Salesperson updated' });
   } catch (err) {
