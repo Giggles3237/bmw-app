@@ -35,8 +35,10 @@ CREATE TABLE salespersons (
   employee_number VARCHAR(20) UNIQUE,
   email VARCHAR(255) UNIQUE,
   phone VARCHAR(20),
-  is_active BOOLEAN DEFAULT TRUE,
+  is_active BOOLEAN DEFAULT FALSE,
   role ENUM('salesperson', 'manager', 'admin') DEFAULT 'salesperson',
+  payplan ENUM('BMW', 'MINI', 'Hybrid') DEFAULT 'BMW',
+  demo_eligible BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY unique_name_employee (name, employee_number)

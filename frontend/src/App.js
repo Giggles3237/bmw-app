@@ -46,6 +46,7 @@ import Funding from './components/Funding';
 import Login from './components/Login';
 import UserManagement from './components/UserManagement';
 import SpiffManagement from './components/SpiffManagement';
+import Dashboard from './components/Dashboard';
 
 const drawerWidth = 240;
 
@@ -87,7 +88,8 @@ const theme = createTheme({
 });
 
 const menuItems = [
-  { text: 'Deals', icon: <DashboardIcon />, view: 'deals', roles: ['admin', 'manager', 'salesperson', 'finance', 'viewer'] },
+  { text: 'Dashboard', icon: <DashboardIcon />, view: 'dashboard', roles: ['admin', 'manager', 'salesperson', 'finance', 'viewer'] },
+  { text: 'Deals', icon: <AddIcon />, view: 'deals', roles: ['admin', 'manager', 'salesperson', 'finance', 'viewer'] },
   { text: 'Funding', icon: <AccountBalanceIcon />, view: 'funding', roles: ['admin', 'manager', 'finance'] },
   { text: 'Salesperson Report', icon: <PersonIcon />, view: 'salespersonReport', roles: ['admin', 'manager', 'salesperson'] },
   { text: 'Payroll Sheet', icon: <AccountBalanceIcon />, view: 'payrollSheet', roles: ['admin', 'manager', 'finance'] },
@@ -99,7 +101,7 @@ const menuItems = [
 
 function App() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [view, setView] = useState('deals');
+  const [view, setView] = useState('dashboard');
   const [salespersonId, setSalespersonId] = useState(() => {
     return localStorage.getItem('salespersonId') || '';
   });
@@ -245,6 +247,7 @@ function App() {
             </IconButton>
             
             <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+              {view === 'dashboard' && 'Dashboard'}
               {view === 'deals' && 'Deals'}
               {view === 'funding' && 'Funding'}
               {view === 'salespersonReport' && 'Salesperson Report'}
@@ -334,6 +337,7 @@ function App() {
                 <Login onLogin={handleLogin} />
               ) : (
                 <>
+                  {view === 'dashboard' && <Dashboard />}
                   {view === 'deals' && <DealList onNavigate={handleNavigation} key={dealListRefreshKey} />}
                   {view === 'funding' && <Funding />}
                   {view === 'salespersonReport' && (

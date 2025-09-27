@@ -239,11 +239,13 @@ function DealList({ onNavigate }) {
   };
 
   const formatCurrency = (amount) => {
-    if (!amount) return '-';
+    if (amount === null || amount === undefined || amount === '') return '-';
+    const parsed = parseFloat(amount);
+    if (isNaN(parsed)) return '-';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-    }).format(amount);
+    }).format(parsed);
   };
 
   const getDateRangeLabel = () => {
@@ -583,7 +585,10 @@ function DealList({ onNavigate }) {
             Showing {filteredDeals.length} of {deals.length} deals
           </Typography>
           <Chip 
-            label={`Total FE Gross: ${formatCurrency(filteredDeals.reduce((sum, deal) => sum + (deal.fe_gross || 0), 0))}`}
+            label={`Total FE Gross: ${formatCurrency(filteredDeals.reduce((sum, deal) => {
+              const feGross = parseFloat(deal.fe_gross);
+              return sum + (isNaN(feGross) ? 0 : feGross);
+            }, 0))}`}
             color="primary"
             variant="outlined"
           />
@@ -682,7 +687,7 @@ function DealList({ onNavigate }) {
                       {formatCurrency(deal.be_gross)}
                     </TableCell>
                     <TableCell sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                      {formatCurrency((deal.fe_gross || 0) + (deal.be_gross || 0))}
+                      {formatCurrency((parseFloat(deal.fe_gross) || 0) + (parseFloat(deal.be_gross) || 0))}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -865,7 +870,7 @@ function DealList({ onNavigate }) {
                 <Grid item xs={12} sm={6} md={4}>
                   <Typography variant="subtitle2" color="text.secondary">Total Gross</Typography>
                   <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                    {formatCurrency((selectedDeal.fe_gross || 0) + (selectedDeal.be_gross || 0))}
+                    {formatCurrency((parseFloat(selectedDeal.fe_gross) || 0) + (parseFloat(selectedDeal.be_gross) || 0))}
                   </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6} md={4}>

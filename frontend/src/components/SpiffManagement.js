@@ -15,6 +15,7 @@ import {
   TextField,
   Select,
   MenuItem,
+  Menu,
   FormControl,
   InputLabel,
   Dialog,
@@ -81,6 +82,7 @@ function SpiffManagement() {
     year: new Date().getFullYear(),
     salesperson_id: '',
     spiff_type_id: '',
+    spiff_type_name: '', // Add custom spiff type name
     amount: '',
     description: '',
     notes: ''
@@ -113,6 +115,7 @@ function SpiffManagement() {
     } catch (err) {
       setError('Failed to fetch initial data');
       console.error('Error fetching initial data:', err);
+      console.error('Error details:', err.response?.data);
     } finally {
       setLoading(false);
     }
@@ -120,7 +123,17 @@ function SpiffManagement() {
 
   const handleAddSpiff = async () => {
     try {
-      const response = await axios.post(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SPIFFS}/monthly`, formData);
+      const spiffData = {
+        month: formData.month,
+        year: formData.year,
+        salesperson_id: formData.salesperson_id,
+        spiff_type_name: formData.spiff_type_name,
+        amount: formData.amount,
+        description: formData.description,
+        notes: formData.notes
+      };
+      
+      const response = await axios.post(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SPIFFS}/monthly`, spiffData);
       setSpiffs(prev => [...prev, response.data]);
       setAddDialogOpen(false);
       resetForm();
@@ -132,9 +145,17 @@ function SpiffManagement() {
 
   const handleUpdateSpiff = async () => {
     try {
+      const updateData = {
+        amount: formData.amount,
+        description: formData.description,
+        notes: formData.notes,
+        spiff_type_name: formData.spiff_type_name,
+        status: formData.status
+      };
+      
       const response = await axios.put(
         `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SPIFFS}/monthly/${selectedSpiff.id}`,
-        formData
+        updateData
       );
       setSpiffs(prev => prev.map(spiff => 
         spiff.id === selectedSpiff.id ? response.data : spiff
@@ -183,9 +204,11 @@ function SpiffManagement() {
       year: new Date().getFullYear(),
       salesperson_id: '',
       spiff_type_id: '',
+      spiff_type_name: '',
       amount: '',
       description: '',
-      notes: ''
+      notes: '',
+      status: 'draft'
     });
   };
 
@@ -196,9 +219,11 @@ function SpiffManagement() {
       year: spiff.year,
       salesperson_id: spiff.salesperson_id,
       spiff_type_id: spiff.spiff_type_id,
+      spiff_type_name: spiff.spiff_type_name || '',
       amount: spiff.amount,
       description: spiff.description || '',
-      notes: spiff.notes || ''
+      notes: spiff.notes || '',
+      status: spiff.status || 'draft'
     });
     setEditDialogOpen(true);
   };
@@ -709,37 +734,37 @@ function SpiffManagement() {
                   value={formData.salesperson_id}
                   onChange={(e) => setFormData(prev => ({ ...prev, salesperson_id: e.target.value }))}
                   label="Salesperson"
+                  disabled={loading}
                 >
-                  {salespersons.map((person) => (
-                    <MenuItem key={person.id} value={person.id}>
-                      {person.name}
-                    </MenuItem>
-                  ))}
+                  {loading ? (
+                    <MenuItem disabled>Loading salespersons...</MenuItem>
+                  ) : salespersons.length === 0 ? (
+                    <MenuItem disabled>No salespersons found</MenuItem>
+                  ) : salespersons
+                    .filter(person => person.is_active === true || person.is_active === 1)
+                    .length === 0 ? (
+                    <MenuItem disabled>No active salespersons found</MenuItem>
+                  ) : (
+                    salespersons
+                      .filter(person => person.is_active === true || person.is_active === 1)
+                      .map((person) => (
+                        <MenuItem key={person.id} value={person.id}>
+                          {person.name}
+                        </MenuItem>
+                      ))
+                  )}
                 </Select>
               </FormControl>
             </Grid>
             <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>Spiff Type</InputLabel>
-                <Select
-                  value={formData.spiff_type_id}
-                  onChange={(e) => {
-                    const selectedType = spiffTypes.find(type => type.id === e.target.value);
-                    setFormData(prev => ({ 
-                      ...prev, 
-                      spiff_type_id: e.target.value,
-                      amount: selectedType?.default_amount || ''
-                    }));
-                  }}
-                  label="Spiff Type"
-                >
-                  {spiffTypes.map((type) => (
-                    <MenuItem key={type.id} value={type.id}>
-                      {type.category_name} - {type.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <TextField
+                label="Spiff Type"
+                value={formData.spiff_type_name}
+                onChange={(e) => setFormData(prev => ({ ...prev, spiff_type_name: e.target.value }))}
+                fullWidth
+                placeholder="Enter spiff type (e.g., VSC Bonus, Unit Bonus, etc.)"
+                helperText="Enter a custom spiff type name"
+              />
             </Grid>
             <Grid item xs={12}>
               <TextField
@@ -786,6 +811,15 @@ function SpiffManagement() {
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12}>
               <TextField
+                label="Spiff Type"
+                value={formData.spiff_type_name}
+                onChange={(e) => setFormData(prev => ({ ...prev, spiff_type_name: e.target.value }))}
+                fullWidth
+                placeholder="Enter spiff type name"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
                 label="Amount"
                 type="number"
                 value={formData.amount}
@@ -818,7 +852,7 @@ function SpiffManagement() {
               <FormControl fullWidth>
                 <InputLabel>Status</InputLabel>
                 <Select
-                  value={selectedSpiff?.status || 'draft'}
+                  value={formData.status || selectedSpiff?.status || 'draft'}
                   onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
                   label="Status"
                 >

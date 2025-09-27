@@ -10,7 +10,7 @@ const pool = require('../db');
 router.get('/', async (req, res) => {
   try {
     const [rows] = await pool.query(`
-      SELECT id, name, employee_number, email, phone, is_active, role, created_at, updated_at 
+      SELECT id, name, employee_number, email, phone, is_active, role, payplan, demo_eligible, created_at, updated_at 
       FROM salespersons 
       ORDER BY name ASC
     `);
@@ -27,7 +27,7 @@ router.get('/', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const { name, employee_number, email, phone, role = 'salesperson' } = req.body;
+    const { name, employee_number, email, phone, role = 'salesperson', payplan = 'BMW', demo_eligible = true } = req.body;
     
     if (!name || !employee_number) {
       return res.status(400).json({ error: 'Name and Employee Number are required' });
@@ -53,7 +53,7 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Employee number already exists' });
     }
 
-    // Check if email already exists (only if email is provided)
+    // Check if email already exists (only if email is provided and not empty)
     if (email && email.trim() !== '') {
       const [existingEmail] = await pool.query(
         'SELECT id FROM salespersons WHERE email = ?', 
@@ -65,9 +65,12 @@ router.post('/', async (req, res) => {
       }
     }
 
+    // Convert empty email to null to avoid UNIQUE constraint issues
+    const emailValue = (email && email.trim() !== '') ? email : null;
+    
     const [result] = await pool.query(
-      'INSERT INTO salespersons (name, employee_number, email, phone, role) VALUES (?, ?, ?, ?, ?)',
-      [name, employee_number, email, phone, role]
+      'INSERT INTO salespersons (name, employee_number, email, phone, role, payplan, demo_eligible, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [name, employee_number, emailValue, phone, role, payplan, demo_eligible, false]
     );
     
     res.status(201).json({ 
@@ -92,7 +95,7 @@ router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const [rows] = await pool.query(`
-      SELECT id, name, employee_number, email, phone, is_active, role, created_at, updated_at 
+      SELECT id, name, employee_number, email, phone, is_active, role, payplan, demo_eligible, created_at, updated_at 
       FROM salespersons 
       WHERE id = ?
     `, [id]);
@@ -114,7 +117,7 @@ router.get('/:id', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, employee_number, email, phone, is_active, role } = req.body;
+    const { name, employee_number, email, phone, is_active, role, payplan, demo_eligible } = req.body;
     
     if (!name || !employee_number) {
       return res.status(400).json({ error: 'Name and Employee Number are required' });
@@ -130,7 +133,7 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Employee number already exists for another salesperson' });
     }
 
-    // Check if another salesperson has the same email (only if email is provided)
+    // Check if another salesperson has the same email (only if email is provided and not empty)
     if (email && email.trim() !== '') {
       const [existingEmail] = await pool.query(
         'SELECT id FROM salespersons WHERE email = ? AND id != ?', 
@@ -142,9 +145,12 @@ router.put('/:id', async (req, res) => {
       }
     }
 
+    // Convert empty email to null to avoid UNIQUE constraint issues
+    const emailValue = (email && email.trim() !== '') ? email : null;
+    
     await pool.query(
-      'UPDATE salespersons SET name = ?, employee_number = ?, email = ?, phone = ?, is_active = ?, role = ? WHERE id = ?',
-      [name, employee_number, email, phone, is_active, role, id]
+      'UPDATE salespersons SET name = ?, employee_number = ?, email = ?, phone = ?, is_active = ?, role = ?, payplan = ?, demo_eligible = ? WHERE id = ?',
+      [name, employee_number, emailValue, phone, is_active, role, payplan, demo_eligible, id]
     );
     
     res.json({ message: 'Salesperson updated' });

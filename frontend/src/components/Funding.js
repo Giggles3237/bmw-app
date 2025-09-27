@@ -51,13 +51,15 @@ import {
   ViewModule as ViewModuleIcon,
   TrendingUp as TrendingUpIcon,
   KeyboardArrowDown as ExpandIcon,
-  KeyboardArrowUp as CollapseIcon
+  KeyboardArrowUp as CollapseIcon,
+  Check as CheckIcon
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import axios from 'axios';
 import API_CONFIG from '../config/api';
+import DealForm from './DealForm';
 
 function Funding() {
   const [unfundedDeals, setUnfundedDeals] = useState([]);
@@ -98,6 +100,11 @@ function Funding() {
     bank: '',
     notes: ''
   });
+
+  // Deal form states
+  const [dealFormOpen, setDealFormOpen] = useState(false);
+  const [dealFormMode, setDealFormMode] = useState('edit');
+  const [dealFormData, setDealFormData] = useState(null);
 
   const fetchUnfundedDeals = async () => {
     setLoading(true);
@@ -373,16 +380,30 @@ function Funding() {
     setForm({ ...form, funded_date: date });
   };
 
-  // Handle deal row click for viewing details
+  // Handle deal row click for editing
   const handleDealClick = (deal) => {
-    setSelectedDeal(deal);
-    setDetailDialogOpen(true);
+    setDealFormData(deal);
+    setDealFormMode('edit');
+    setDealFormOpen(true);
   };
 
   // Handle detail dialog close
   const handleCloseDetailDialog = () => {
     setDetailDialogOpen(false);
     setSelectedDeal(null);
+  };
+
+  // Handle deal form close
+  const handleDealFormClose = () => {
+    setDealFormOpen(false);
+    setDealFormData(null);
+  };
+
+  // Handle deal form success
+  const handleDealFormSuccess = () => {
+    setDealFormOpen(false);
+    setDealFormData(null);
+    fetchUnfundedDeals(); // Refresh the deals list
   };
 
   const formatCurrency = (amount) => {
@@ -776,22 +797,22 @@ function Funding() {
                           <TableCell>{deal.bank || '-'}</TableCell>
                           <TableCell>
                             <Box sx={{ display: 'flex', gap: 1 }}>
-                              <Tooltip title="View Details">
+                              <Tooltip title="Edit Deal">
                                 <IconButton
                                   size="small"
                                   onClick={() => handleDealClick(deal)}
                                   color="info"
                                 >
-                                  <ViewIcon />
+                                  <EditIcon />
                                 </IconButton>
                               </Tooltip>
                               <Tooltip title="Mark as Funded">
                                 <IconButton
                                   size="small"
                                   onClick={() => handleOpenDialog(deal)}
-                                  color="primary"
+                                  color="success"
                                 >
-                                  <EditIcon />
+                                  <CheckIcon />
                                 </IconButton>
                               </Tooltip>
                             </Box>
@@ -960,7 +981,7 @@ function Funding() {
             <Button onClick={handleCloseDetailDialog}>Close</Button>
             <Button 
               variant="contained" 
-              startIcon={<EditIcon />}
+              startIcon={<CheckIcon />}
               onClick={() => {
                 handleCloseDetailDialog();
                 handleOpenDialog(selectedDeal);
@@ -1045,17 +1066,26 @@ function Funding() {
             </DialogContent>
             <DialogActions>
               <Button onClick={handleCloseDialog}>Cancel</Button>
-              <Button 
+              <Button
                 type="submit" 
                 variant="contained" 
                 disabled={loading || !form.funded_date}
-                startIcon={<CheckCircleIcon />}
+                startIcon={<CheckIcon />}
               >
                 {loading ? <CircularProgress size={20} /> : 'Mark as Funded'}
               </Button>
             </DialogActions>
           </form>
         </Dialog>
+
+        {/* Deal Form Modal */}
+        <DealForm
+          open={dealFormOpen}
+          onClose={handleDealFormClose}
+          onSuccess={handleDealFormSuccess}
+          editMode={dealFormMode === 'edit'}
+          dealData={dealFormData}
+        />
       </Box>
     </LocalizationProvider>
   );

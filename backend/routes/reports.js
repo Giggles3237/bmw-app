@@ -202,11 +202,13 @@ router.get('/payroll', async (req, res) => {
       params.push(salesperson_id);
     }
 
-    // Get deal data with vehicle type classification
+    // Get deal data with salesperson payplan information
     const sql = `
       SELECT 
         s.id as salesperson_id,
         s.name AS salesperson,
+        s.payplan,
+        s.demo_eligible,
         d.type,
         COUNT(*) AS unit_count,
         SUM(COALESCE(d.fe_gross, 0)) AS fe_gross_total,
@@ -225,7 +227,7 @@ router.get('/payroll', async (req, res) => {
       FROM deals d
       LEFT JOIN salespersons s ON d.salesperson_id = s.id
       ${whereClause}
-      GROUP BY s.id, s.name, d.type
+      GROUP BY s.id, s.name, s.payplan, s.demo_eligible, d.type
       ORDER BY s.name, d.type
     `;
 
@@ -278,6 +280,54 @@ router.get('/payroll', async (req, res) => {
     
     // Process the data to calculate payroll
     const payrollData = calculatePayroll(rows, month, year);
+    
+    // Fetch approved spiffs for all salespersons in this month/year
+    const spiffsSql = `
+      SELECT 
+        ms.salesperson_id,
+        s.name as salesperson_name,
+        SUM(CASE WHEN ms.status = 'approved' THEN ms.amount ELSE 0 END) as approved_spiff_amount,
+        SUM(CASE WHEN ms.status = 'paid' THEN ms.amount ELSE 0 END) as paid_spiff_amount,
+        COUNT(CASE WHEN ms.status = 'approved' THEN 1 END) as approved_spiff_count,
+        COUNT(CASE WHEN ms.status = 'paid' THEN 1 END) as paid_spiff_count
+      FROM monthly_spiffs ms
+      LEFT JOIN salespersons s ON ms.salesperson_id = s.id
+      WHERE ms.month = ? AND ms.year = ? AND ms.status IN ('approved', 'paid')
+      GROUP BY ms.salesperson_id, s.name
+    `;
+    
+    console.log('Fetching spiffs with params:', [month, year]);
+    const [spiffsRows] = await pool.query(spiffsSql, [month, year]);
+    console.log('Spiffs data:', spiffsRows);
+    
+    // Create a map of salesperson_id to spiff data for quick lookup
+    const spiffsMap = {};
+    spiffsRows.forEach(spiff => {
+      spiffsMap[spiff.salesperson_id] = {
+        approved_spiff_amount: spiff.approved_spiff_amount || 0,
+        paid_spiff_amount: spiff.paid_spiff_amount || 0,
+        approved_spiff_count: spiff.approved_spiff_count || 0,
+        paid_spiff_count: spiff.paid_spiff_count || 0
+      };
+    });
+    
+    // Add spiff data to payroll data and update total pay
+    payrollData.forEach(person => {
+      const spiffData = spiffsMap[person.salesperson_id] || {
+        approved_spiff_amount: 0,
+        paid_spiff_amount: 0,
+        approved_spiff_count: 0,
+        paid_spiff_count: 0
+      };
+      
+      person.approved_spiff_amount = spiffData.approved_spiff_amount;
+      person.paid_spiff_amount = spiffData.paid_spiff_amount;
+      person.approved_spiff_count = spiffData.approved_spiff_count;
+      person.paid_spiff_count = spiffData.paid_spiff_count;
+      
+      // Update total pay to include approved spiffs
+      person.total_pay += person.approved_spiff_amount;
+    });
     
     // Add deal details to the payroll data if we have them
     console.log('About to attach deal details. dealDetails:', dealDetails);
@@ -334,8 +384,8 @@ router.get('/payroll', async (req, res) => {
         payrollData[0].maintenance_bonus +
         payrollData[0].excess_bonus;
       
-      // Recalculate total pay with accurate product bonuses
-      payrollData[0].total_pay = payrollData[0].unit_commission + payrollData[0].product_bonus + payrollData[0].rewards_bonus + payrollData[0].bonus_earned;
+      // Recalculate total pay with accurate product bonuses and approved spiffs
+      payrollData[0].total_pay = payrollData[0].unit_commission + payrollData[0].product_bonus + payrollData[0].rewards_bonus + payrollData[0].bonus_earned + payrollData[0].approved_spiff_amount;
       
       console.log('Successfully added deal details to payroll data');
       console.log('Product bonuses calculated:', {
@@ -371,6 +421,8 @@ function calculatePayroll(dealData, month, year) {
       salespersonMap.set(deal.salesperson_id, {
         salesperson: deal.salesperson || 'Unassigned',
         salesperson_id: deal.salesperson_id,
+        payplan: deal.payplan || 'BMW',
+        demo_eligible: deal.demo_eligible !== false,
         month: parseInt(month),
         year: parseInt(year),
         deal_count: 0,
@@ -425,7 +477,7 @@ function calculatePayroll(dealData, month, year) {
     }
   });
   
-  // Calculate commissions and bonuses for each salesperson
+  // Calculate commissions and bonuses for each salesperson based on their payplan
   salespersonMap.forEach(person => {
     // BMW sliding scale rates
     const bmwRates = {
@@ -449,27 +501,46 @@ function calculatePayroll(dealData, month, year) {
       // Units 12+: $375
     };
     
-    // Calculate BMW unit commission using sliding scale
-    let bmwCommission = 0;
-    for (let i = 1; i <= person.bmw_units; i++) {
-      if (i <= 11) {
-        bmwCommission += bmwRates[i];
-      } else {
-        bmwCommission += 425; // Units 12+: $425
+    // Calculate unit commission based on payplan
+    let unitCommission = 0;
+    
+    if (person.payplan === 'BMW') {
+      // BMW payplan: use BMW rates for all units
+      for (let i = 1; i <= person.total_units; i++) {
+        if (i <= 11) {
+          unitCommission += bmwRates[i];
+        } else {
+          unitCommission += 425; // Units 12+: $425
+        }
+      }
+    } else if (person.payplan === 'MINI') {
+      // MINI payplan: use MINI rates for all units
+      for (let i = 1; i <= person.total_units; i++) {
+        if (i <= 11) {
+          unitCommission += miniRates[i];
+        } else {
+          unitCommission += 375; // Units 12+: $375
+        }
+      }
+    } else if (person.payplan === 'Hybrid') {
+      // Hybrid payplan: use BMW rates for BMW units, MINI rates for MINI units
+      for (let i = 1; i <= person.bmw_units; i++) {
+        if (i <= 11) {
+          unitCommission += bmwRates[i];
+        } else {
+          unitCommission += 425; // Units 12+: $425
+        }
+      }
+      for (let i = 1; i <= person.mini_units; i++) {
+        if (i <= 11) {
+          unitCommission += miniRates[i];
+        } else {
+          unitCommission += 375; // Units 12+: $375
+        }
       }
     }
     
-    // Calculate MINI unit commission using sliding scale
-    let miniCommission = 0;
-    for (let i = 1; i <= person.mini_units; i++) {
-      if (i <= 11) {
-        miniCommission += miniRates[i];
-      } else {
-        miniCommission += 375; // Units 12+: $375
-      }
-    }
-    
-    person.unit_commission = bmwCommission + miniCommission;
+    person.unit_commission = unitCommission;
     
     // Calculate product bonuses according to BMW of Pittsburgh pay plan
     // $50 for each VSC, Cilajet, and Tire & Wheel Protection sold
@@ -503,7 +574,7 @@ function calculatePayroll(dealData, month, year) {
     // Calculate bonus (if they exceed threshold)
     person.bonus_earned = person.total_units >= 10 ? 500 : 0;
     
-    // Calculate total pay
+    // Calculate total pay (spiffs will be added later in the main function)
     person.total_pay = person.unit_commission + person.product_bonus + person.rewards_bonus + person.bonus_earned;
   });
   

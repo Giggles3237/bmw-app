@@ -103,12 +103,47 @@ router.get('/monthly', async (req, res) => {
  */
 router.post('/monthly', async (req, res) => {
   try {
-    const { month, year, salesperson_id, spiff_type_id, amount, description, notes } = req.body;
+    const { month, year, salesperson_id, spiff_type_id, spiff_type_name, amount, description, notes } = req.body;
     
     // Validate required fields
-    if (!month || !year || !salesperson_id || !spiff_type_id || !amount) {
+    if (!month || !year || !salesperson_id || !amount) {
       return res.status(400).json({ 
-        error: 'Month, year, salesperson_id, spiff_type_id, and amount are required' 
+        error: 'Month, year, salesperson_id, and amount are required' 
+      });
+    }
+    
+    // Validate that either spiff_type_id or spiff_type_name is provided
+    if (!spiff_type_id && !spiff_type_name) {
+      return res.status(400).json({ 
+        error: 'Either spiff_type_id or spiff_type_name is required' 
+      });
+    }
+    
+    // If spiff_type_name is provided, create or find the spiff type
+    let finalSpiffTypeId = spiff_type_id;
+    
+    if (spiff_type_name && !spiff_type_id) {
+      // Check if spiff type already exists
+      const [existingType] = await pool.query(`
+        SELECT id FROM spiff_types WHERE name = ?
+      `, [spiff_type_name]);
+      
+      if (existingType.length > 0) {
+        finalSpiffTypeId = existingType[0].id;
+      } else {
+        // Create new spiff type in "Special Recognition" category (category_id 5)
+        const [newType] = await pool.query(`
+          INSERT INTO spiff_types (category_id, name, description, default_amount, calculation_method)
+          VALUES (5, ?, ?, ?, 'fixed')
+        `, [spiff_type_name, description || '', amount]);
+        
+        finalSpiffTypeId = newType.insertId;
+      }
+    }
+    
+    if (!finalSpiffTypeId) {
+      return res.status(400).json({ 
+        error: 'Either spiff_type_id or spiff_type_name is required' 
       });
     }
     
@@ -116,7 +151,7 @@ router.post('/monthly', async (req, res) => {
     const [existing] = await pool.query(`
       SELECT id FROM monthly_spiffs 
       WHERE month = ? AND year = ? AND salesperson_id = ? AND spiff_type_id = ?
-    `, [month, year, salesperson_id, spiff_type_id]);
+    `, [month, year, salesperson_id, finalSpiffTypeId]);
     
     if (existing.length > 0) {
       return res.status(409).json({ 
@@ -129,7 +164,7 @@ router.post('/monthly', async (req, res) => {
       INSERT INTO monthly_spiffs 
       (month, year, salesperson_id, spiff_type_id, amount, description, notes, status, created_by)
       VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', 1)
-    `, [month, year, salesperson_id, spiff_type_id, amount, description || null, notes || null]);
+    `, [month, year, salesperson_id, finalSpiffTypeId, amount, description || null, notes || null]);
     
     // Return the created spiff with full details
     const [newSpiff] = await pool.query(`
@@ -158,7 +193,7 @@ router.post('/monthly', async (req, res) => {
 router.put('/monthly/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { amount, description, status, notes } = req.body;
+    const { amount, description, status, notes, spiff_type_name } = req.body;
     
     // Build dynamic update query
     const updates = [];
@@ -184,6 +219,30 @@ router.put('/monthly/:id', async (req, res) => {
     if (notes !== undefined) {
       updates.push('notes = ?');
       params.push(notes);
+    }
+    
+    // Handle spiff type name update
+    if (spiff_type_name !== undefined) {
+      // Check if spiff type already exists
+      const [existingType] = await pool.query(`
+        SELECT id FROM spiff_types WHERE name = ?
+      `, [spiff_type_name]);
+      
+      let spiffTypeId;
+      if (existingType.length > 0) {
+        spiffTypeId = existingType[0].id;
+      } else {
+        // Create new spiff type in "Special Recognition" category (category_id 5)
+        const [newType] = await pool.query(`
+          INSERT INTO spiff_types (category_id, name, description, default_amount, calculation_method)
+          VALUES (5, ?, ?, ?, 'fixed')
+        `, [spiff_type_name, description || '', amount || 0]);
+        
+        spiffTypeId = newType.insertId;
+      }
+      
+      updates.push('spiff_type_id = ?');
+      params.push(spiffTypeId);
     }
     
     if (updates.length === 0) {

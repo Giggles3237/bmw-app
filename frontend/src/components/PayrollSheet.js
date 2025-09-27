@@ -200,6 +200,7 @@ function PayrollSheet() {
     acc.unit_commission += person.unit_commission || 0;
     acc.product_commission += person.product_commission || 0;
     acc.bonus_earned += person.bonus_earned || 0;
+    acc.approved_spiff_amount += person.approved_spiff_amount || 0;
     acc.total_pay += person.total_pay || 0;
     return acc;
   }, {
@@ -213,6 +214,7 @@ function PayrollSheet() {
     unit_commission: 0,
     product_commission: 0,
     bonus_earned: 0,
+    approved_spiff_amount: 0,
     total_pay: 0
   });
 
@@ -469,17 +471,6 @@ function PayrollSheet() {
               </Grid>
             </Grid>
             
-            {/* Additional Information */}
-            <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid #b3d9ff' }}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2"><strong>Product Commission:</strong> 5% of product sales</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2"><strong>Bonus:</strong> $500 for 10+ total units</Typography>
-                </Grid>
-              </Grid>
-            </Box>
           </CardContent>
         </Card>
       )}
@@ -515,6 +506,8 @@ function PayrollSheet() {
               <TableHead>
                 <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
                   <TableCell sx={{ fontWeight: 600, fontSize: '0.95rem' }}>Salesperson</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 600, fontSize: '0.95rem' }}>Payplan</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 600, fontSize: '0.95rem' }}>Demo Eligible</TableCell>
                   <TableCell align="center" sx={{ fontWeight: 600, fontSize: '0.95rem' }}>Deals</TableCell>
                   <TableCell align="center" sx={{ fontWeight: 600, fontSize: '0.95rem' }}>BMW Units</TableCell>
                   <TableCell align="center" sx={{ fontWeight: 600, fontSize: '0.95rem' }}>MINI Units</TableCell>
@@ -525,6 +518,7 @@ function PayrollSheet() {
                   <TableCell align="right" sx={{ fontWeight: 600, fontSize: '0.95rem' }}>Unit Comm</TableCell>
                   <TableCell align="right" sx={{ fontWeight: 600, fontSize: '0.95rem' }}>Prod Comm</TableCell>
                   <TableCell align="right" sx={{ fontWeight: 600, fontSize: '0.95rem' }}>Bonus</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 600, fontSize: '0.95rem' }}>Spiffs</TableCell>
                   <TableCell align="right" sx={{ fontWeight: 600, fontSize: '0.95rem', backgroundColor: '#d4edda' }}>Total Pay</TableCell>
                 </TableRow>
               </TableHead>
@@ -562,6 +556,20 @@ function PayrollSheet() {
                       </Button>
                     </TableCell>
                     <TableCell align="center">
+                      <Chip 
+                        label={person.payplan || 'BMW'} 
+                        color="primary"
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell align="center">
+                      <Chip 
+                        label={person.demo_eligible ? 'Yes' : 'No'}
+                        color={person.demo_eligible ? 'success' : 'default'}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell align="center">
                       {person.deal_count || 0}
                     </TableCell>
                     <TableCell align="center">
@@ -591,6 +599,9 @@ function PayrollSheet() {
                     <TableCell align="right">
                       {formatCurrency(person.bonus_earned)}
                     </TableCell>
+                    <TableCell align="right">
+                      {formatCurrency(person.approved_spiff_amount || 0)}
+                    </TableCell>
                     <TableCell align="right" sx={{ 
                       fontWeight: 'bold',
                       backgroundColor: '#d4edda'
@@ -603,6 +614,12 @@ function PayrollSheet() {
                 {/* Totals Row */}
                 <TableRow sx={{ backgroundColor: '#e9ecef', fontWeight: 'bold' }}>
                   <TableCell sx={{ fontWeight: 'bold' }}>TOTALS</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 'bold' }}>
+                    -
+                  </TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 'bold' }}>
+                    -
+                  </TableCell>
                   <TableCell align="center" sx={{ fontWeight: 'bold' }}>
                     {totals.deal_count}
                   </TableCell>
@@ -632,6 +649,9 @@ function PayrollSheet() {
                   </TableCell>
                   <TableCell align="right" sx={{ fontWeight: 'bold' }}>
                     {formatCurrency(totals.bonus_earned)}
+                  </TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>
+                    {formatCurrency(totals.approved_spiff_amount || 0)}
                   </TableCell>
                   <TableCell align="right" sx={{ 
                     fontWeight: 'bold',

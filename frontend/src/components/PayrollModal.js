@@ -314,11 +314,21 @@ function PayrollModal({ isOpen, onClose, payrollData, month, year }) {
   const ppfBonus = payrollData.ppf_bonus || 0;
   const productBonus = payrollData.product_bonus || 0;
   
-  // Calculate demonstration vehicle allowance (if 8+ units)
-  const demoVehicleAllowance = totalUnits >= 8 ? 300 : 0;
+  // Get spiff information
+  const approvedSpiffAmount = payrollData.approved_spiff_amount || 0;
+  const approvedSpiffCount = payrollData.approved_spiff_count || 0;
+  const paidSpiffAmount = payrollData.paid_spiff_amount || 0;
+  const paidSpiffCount = payrollData.paid_spiff_count || 0;
   
-  // Calculate total pay
-  const totalPay = unitCommission + rewardsUpgradeBonus + productBonus + demoVehicleAllowance;
+  // Get payplan and demo eligibility information
+  const payplan = payrollData.payplan || 'BMW';
+  const demoEligible = payrollData.demo_eligible !== false;
+  
+  // Calculate demonstration vehicle allowance (if demo eligible and 8+ units)
+  const demoVehicleAllowance = (demoEligible && totalUnits >= 8) ? 300 : 0;
+  
+  // Calculate total pay (including approved spiffs)
+  const totalPay = unitCommission + rewardsUpgradeBonus + productBonus + demoVehicleAllowance + approvedSpiffAmount;
 
   return (
     <>
@@ -353,6 +363,14 @@ function PayrollModal({ isOpen, onClose, payrollData, month, year }) {
                 <div className="info-row">
                   <span className="label">Employee:</span>
                   <span className="value">{payrollData.salesperson || 'N/A'}</span>
+                </div>
+                <div className="info-row">
+                  <span className="label">Payplan:</span>
+                  <span className="value">{payplan}</span>
+                </div>
+                <div className="info-row">
+                  <span className="label">Demo Eligible:</span>
+                  <span className="value">{demoEligible ? 'Yes' : 'No'}</span>
                 </div>
                 <div className="info-row">
                   <span className="label">Period:</span>
@@ -559,6 +577,18 @@ function PayrollModal({ isOpen, onClose, payrollData, month, year }) {
                   <span>Demo Vehicle Allowance:</span>
                   <span className="amount">{formatCurrency(demoVehicleAllowance)}</span>
                 </div>
+                {approvedSpiffAmount > 0 && (
+                  <div className="pay-item">
+                    <span>Approved Spiffs ({approvedSpiffCount}):</span>
+                    <span className="amount">{formatCurrency(approvedSpiffAmount)}</span>
+                  </div>
+                )}
+                {paidSpiffAmount > 0 && (
+                  <div className="pay-item">
+                    <span>Paid Spiffs ({paidSpiffCount}):</span>
+                    <span className="amount">{formatCurrency(paidSpiffAmount)}</span>
+                  </div>
+                )}
                 <div className="pay-item total">
                   <span><strong>Total Pay:</strong></span>
                   <span className="amount"><strong>{formatCurrency(totalPay)}</strong></span>

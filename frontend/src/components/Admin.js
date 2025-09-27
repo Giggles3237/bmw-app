@@ -44,6 +44,7 @@ function Admin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [showInactive, setShowInactive] = useState(false);
   
   // Form states
   const [openDialog, setOpenDialog] = useState(false);
@@ -54,6 +55,8 @@ function Admin() {
     email: '',
     phone: '',
     role: 'salesperson',
+    payplan: 'BMW',
+    demo_eligible: true,
     is_active: true
   });
 
@@ -83,6 +86,8 @@ function Admin() {
         email: salesperson.email || '',
         phone: salesperson.phone || '',
         role: salesperson.role || 'salesperson',
+        payplan: salesperson.payplan || 'BMW',
+        demo_eligible: salesperson.demo_eligible !== false,
         is_active: salesperson.is_active !== false
       });
     } else {
@@ -93,6 +98,8 @@ function Admin() {
         email: '',
         phone: '',
         role: 'salesperson',
+        payplan: 'BMW',
+        demo_eligible: true,
         is_active: true
       });
     }
@@ -108,6 +115,8 @@ function Admin() {
       email: '',
       phone: '',
       role: 'salesperson',
+      payplan: 'BMW',
+      demo_eligible: true,
       is_active: true
     });
   };
@@ -180,13 +189,25 @@ function Admin() {
         <Typography variant="h4" component="h1">
           Admin - Salespeople Management
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenDialog()}
-        >
-          Add Salesperson
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showInactive}
+                onChange={(e) => setShowInactive(e.target.checked)}
+                color="primary"
+              />
+            }
+            label="Show Inactive"
+          />
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => handleOpenDialog()}
+          >
+            Add Salesperson
+          </Button>
+        </Box>
       </Box>
 
       {error && (
@@ -216,13 +237,17 @@ function Admin() {
                 <TableCell>Email</TableCell>
                 <TableCell>Phone</TableCell>
                 <TableCell>Role</TableCell>
+                <TableCell>Payplan</TableCell>
+                <TableCell>Demo Eligible</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Created</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {salespeople.map((salesperson) => (
+              {salespeople
+                .filter(salesperson => showInactive || salesperson.is_active)
+                .map((salesperson) => (
                 <TableRow key={salesperson.id} hover>
                   <TableCell>{salesperson.id}</TableCell>
                   <TableCell>{salesperson.name}</TableCell>
@@ -233,6 +258,20 @@ function Admin() {
                     <Chip 
                       label={salesperson.role} 
                       color={getRoleColor(salesperson.role)}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Chip 
+                      label={salesperson.payplan || 'BMW'} 
+                      color="primary"
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Chip 
+                      label={salesperson.demo_eligible ? 'Yes' : 'No'}
+                      color={salesperson.demo_eligible ? 'success' : 'default'}
                       size="small"
                     />
                   </TableCell>
@@ -328,6 +367,33 @@ function Admin() {
                     <MenuItem value="admin">Admin</MenuItem>
                   </Select>
                 </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Payplan</InputLabel>
+                  <Select
+                    name="payplan"
+                    value={form.payplan}
+                    label="Payplan"
+                    onChange={handleChange}
+                  >
+                    <MenuItem value="BMW">BMW</MenuItem>
+                    <MenuItem value="MINI">MINI</MenuItem>
+                    <MenuItem value="Hybrid">Hybrid</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      name="demo_eligible"
+                      checked={form.demo_eligible}
+                      onChange={handleChange}
+                    />
+                  }
+                  label="Demo Eligible"
+                />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <FormControlLabel

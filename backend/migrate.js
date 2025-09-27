@@ -197,7 +197,7 @@ async function getSalespersonId(name) {
   if (rows.length > 0) {
     return rows[0].id;
   }
-  const [result] = await pool.query('INSERT INTO salespersons (name) VALUES (?)', [cleaned]);
+  const [result] = await pool.query('INSERT INTO salespersons (name, is_active) VALUES (?, ?)', [cleaned, false]);
   return result.insertId;
 }
 
